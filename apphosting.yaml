@@ -1,0 +1,5 @@
+run:
+  build: npm run build
+env:
+  - variable: NEXT_PUBLIC_GOOGLE_API_KEY
+    secret: GOOGLE_API_KEY
