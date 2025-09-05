@@ -1,12 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // This is the critical line that tells Next.js to create the 'out' folder.
-  output: 'export',
-  
-  // This is needed for images to work correctly in a static export.
-  images: {
-    unoptimized: true,
-  },
+  // other settings...
+  // output: 'standalone', // You can comment it out or delete it
 };
 
 export default nextConfig;
