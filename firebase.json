@@ -1,23 +1,25 @@
 {
   "hosting": {
-    "public": "out",
+    "source": ".",
     "ignore": [
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
     ],
+    "frameworksBackend": {
+      "region": "us-central1"
+    },
     "headers": [
       {
         "source": "**",
         "headers": [
           {
-            "key": "Content-Security-Policy",
-            "value": "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.gstatic.com https://apis.google.com https://identitytoolkit.googleapis.com; img-src 'self' https://firebasestorage.googleapis.com; object-src 'none';"
+            "key": "Cross-Origin-Opener-Policy",
+            "value": "same-origin-allow-popups"
           }
         ]
       }
     ]
   }
 }
-
 
