@@ -1,8 +1,15 @@
-/** @type {import('next').NextConfig} */
+// next.config.mjs
 const nextConfig = {
-  // other settings...
-  // output: 'standalone', // You can comment it out or delete it
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'firebasestorage.googleapis.com',
+        port: '',
+        pathname: '/v0/b/grand-medical-website.firebasestorage.app/**',
+      },
+    ],
+  },
 };
 
 export default nextConfig;
-

@@ -1,57 +1,100 @@
+// src/app/page.js
+"use client";
+
 import React from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+
+const ModalityCard = ({ name, imageUrl }) => (
+  <Link href="/products/Systems" className="group block text-center cursor-pointer">
+    <div className="aspect-w-1 aspect-h-1 bg-gray-100 rounded-lg overflow-hidden group-hover:shadow-lg transition duration-300">
+      <div className="w-full h-full flex items-center justify-center">
+        <Image 
+          src={imageUrl} 
+          alt={`${name} placeholder`} 
+          width={400} 
+          height={400} 
+          className="w-full h-full object-cover"
+        />
+      </div>
+    </div>
+    <h3 className="mt-4 text-lg font-semibold text-gray-800">{name}</h3>
+  </Link>
+);
 
 export default function Home() {
-  // We define the image URL directly here for simplicity.
-  const heroBackgroundImage = 'https://firebasestorage.googleapis.com/v0/b/grand-medical-website.appspot.com/o/mri%20image.jpg?alt=media&token=40edff6-4ec0-4d52-86e9-022d02cb5344';
+  const heroBackgroundImage = 'https://firebasestorage.googleapis.com/v0/b/grand-medical-website.firebasestorage.app/o/mri%20image.jpg?alt=media&token=40eedff6-4ec0-4d52-86e9-022d02cb5344';
+  const warehouseImage = 'https://firebasestorage.googleapis.com/v0/b/grand-medical-website.firebasestorage.app/o/image.jpg?alt=media&token=dfc6a5be-3323-409a-9964-5f6538dee19f';
+
+  const modalities = [
+    { name: "MRI", imageUrl: "https://firebasestorage.googleapis.com/v0/b/grand-medical-website.firebasestorage.app/o/MRI%20sample.jpg?alt=media&token=c7524a27-de71-4e5b-a4cc-e552eb2cb65e" },
+    { name: "CT", imageUrl: "https://firebasestorage.googleapis.com/v0/b/grand-medical-website.firebasestorage.app/o/CT%20Sample.jpg?alt=media&token=355a9618-53ea-4b6c-93a0-2a320c0f8d7d" },
+    { name: "CATH/ANGIO", imageUrl: "https://firebasestorage.googleapis.com/v0/b/grand-medical-website.firebasestorage.app/o/cath%20sample.jpg?alt=media&token=d9480024-bfd7-44aa-bda5-e3152417dd33" },
+    { name: "PET/CT", imageUrl: "https://firebasestorage.googleapis.com/v0/b/grand-medical-website.firebasestorage.app/o/PET%20sample.jpg?alt=media&token=6e8aff9f-d2a2-47be-b533-91c45fe8be4d" },
+    { name: "MAMMO", imageUrl: "https://firebasestorage.googleapis.com/v0/b/grand-medical-website.firebasestorage.app/o/Mammo%20sample.jpg?alt=media&token=d9e09363-5a7e-4e34-8537-ec66fd0e2738" },
+    { name: "SPECT/CT", imageUrl: "https://firebasestorage.googleapis.com/v0/b/grand-medical-website.firebasestorage.app/o/spec%20samp.jpg?alt=media&token=9b9bc5c7-24b8-447f-b470-bbeda32f44fb" }
+  ];
 
   return (
-    <main>
-      {/* Hero Section */}
-      <section className="relative h-[70vh] flex items-center justify-center text-white">
-        
-        {/* Background Image Container - UPDATED for better Tailwind compatibility */}
-        <div 
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url('${heroBackgroundImage}')` }}
-        >
-          {/* Dark Overlay for better text readability */}
-          <div className="absolute inset-0 bg-black opacity-50"></div>
+    <>
+      <section className="relative text-white hero-section flex items-center justify-center">
+        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url('${heroBackgroundImage}')` }}>
+          <div className="absolute inset-0 bg-black/50"></div>
         </div>
-
-        {/* Centered Content */}
-        <div className="relative z-10 text-center px-6">
-          <h1 className="text-4xl md:text-6xl font-bold tracking-wider mb-4">
-            GRAND MEDICAL EQUIPMENT®
+        <div className="relative container mx-auto px-6 text-center pt-24">
+          <h1 className="text-4xl md:text-6xl font-bold mb-4 uppercase tracking-wider">
+            Grand Medical Equipment<sup className="text-2xl md:text-4xl top-[-0.5em]">®</sup>
           </h1>
-          <p className="text-lg md:text-xl">
-            Your Trusted Source for Pre-Owned Medical Equipment
-          </p>
+          <p className="text-lg md:text-xl mb-8 max-w-3xl mx-auto">Your Trusted Source for Pre-Owned Medical Equipment</p>
         </div>
-
       </section>
 
-      {/* "Expertise and Trust" Section */}
       <section className="py-20 bg-white">
         <div className="container mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-          {/* Text Content */}
-          <div className="text-gray-600">
-            <h2 className="text-3xl font-bold text-gray-800 mb-4">
-              30+ Years of Expertise and Trust
-            </h2>
-            <p className="mb-4">
-              We are a large used medical equipment and parts dealer and supplier based in the United States, specializing in buying/selling imaging systems and their parts in good working condition and at the most competitive prices.
-            </p>
-            <p>
-              We operate our business professionally and honestly and have gained the best reputation and trust by our customers and suppliers.
-            </p>
+          <div className="text-gray-600 space-y-4">
+            <h2 className="text-3xl font-bold text-gray-800 mb-4">30+ Years of Expertise and Trust</h2>
+            <p>We are a large used medical equipment and parts dealer and supplier based in the United States, specializing in buying/selling complete used medical imaging systems and their parts in good working condition and at the most competitive prices.</p>
+            <p>We operate our business professionally and honestly and have gained the best reputation and trust by our customers and suppliers all over the world.</p>
           </div>
-
-          {/* Empty div for layout spacing on larger screens */}
-          <div className="hidden md:block"></div>
+          <div>
+            <Image src={warehouseImage} alt="Warehouse" width={800} height={600} className="rounded-lg shadow-lg"/>
+          </div>
         </div>
       </section>
-      
-    </main>
-  );
-}
 
+      <section className="bg-slate-50 py-20">
+        <div className="container mx-auto px-6">
+          <h2 className="text-center text-3xl font-bold text-gray-800 mb-12">We Buy and Sell All Modalities</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8">
+            {modalities.map(modality => (
+              <ModalityCard key={modality.name} name={modality.name} imageUrl={modality.imageUrl} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="py-20 bg-white">
+        <div className="container mx-auto px-6 text-center">
+          <h2 className="text-3xl font-bold text-gray-800 mb-12">Why Choose Us?</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+            <div className="text-center">
+              <div className="text-5xl text-teal-500 mb-4">✓</div>
+              <h3 className="text-xl font-bold text-gray-800 mb-2">30+ Years of Experience</h3>
+              <p className="text-gray-600">Our long-standing presence in the industry is a testament to our reliability and expertise.</p>
+            </div>
+            <div className="text-center">
+              <div className="text-5xl text-teal-500 mb-4">✓</div>
+              <h3 className="text-xl font-bold text-gray-800 mb-2">Quality Inspected Equipment</h3>
+              <p className="text-gray-600">Every system and part we sell is thoroughly tested to ensure it meets our high standards.</p>
+            </div>
+            <div className="text-center">
+              <div className="text-5xl text-teal-500 mb-4">✓</div>
+              <h3 className="text-xl font-bold text-gray-800 mb-2">Global Shipping & Logistics</h3>
+              <p className="text-gray-600">We handle all logistics to deliver your equipment safely and efficiently, anywhere in the world.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </>
+  )
+}
