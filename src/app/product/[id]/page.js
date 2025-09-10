@@ -18,7 +18,7 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentImage, setCurrentImage] = useState('');
-
+  
   useEffect(() => {
     if (!productId) return;
 
@@ -40,7 +40,8 @@ export default function ProductDetailPage() {
             brand: data.MANUFACTURER || data.BRAND,
             description: data.DESCRIPTION,
             image: imageUrl && imageUrl.startsWith('http') ? imageUrl : null,
-            comments: data.COMMENT || data.COMMENTS
+            comments: data.COMMENT || data.COMMENTS,
+            location: data.LOCATION // <-- FIX #1: Added location to the fetched data
           };
           break;
         }
@@ -75,8 +76,6 @@ export default function ProductDetailPage() {
           ← Back to previous page
         </button>
         <div className="flex flex-col md:flex-row gap-12">
-          
-          {/* --- THIS IS THE FIX: Only show image column if an image exists --- */}
           {product.image && (
             <div className="md:w-1/2">
               <div className="mb-4">
@@ -103,8 +102,6 @@ export default function ProductDetailPage() {
               )}
             </div>
           )}
-
-          {/* Use full width if no image, otherwise half width */}
           <div className={product.image ? "md:w-1/2" : "w-full"}>
             <p className="text-lg text-gray-500">{product.modality} {product.brand ? `/ ${product.brand}` : ''}</p>
             <h1 className="text-4xl font-bold text-gray-900 mt-2 mb-4">{product.description}</h1>
@@ -121,6 +118,8 @@ export default function ProductDetailPage() {
                  <div className="mt-8 p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded-r-lg">
                     <h3 className="text-xl font-bold text-yellow-800 mb-2">Internal Admin Notes</h3>
                     <div className="text-yellow-700">
+                        {/* --- FIX #2: Added the Location display --- */}
+                        <p><strong className="font-semibold">Location:</strong> {product.location || 'N/A'}</p>
                         <p><strong className="font-semibold">Comments:</strong> {displayComments}</p>
                     </div>
                     <div className="mt-4 flex space-x-4">
@@ -129,7 +128,6 @@ export default function ProductDetailPage() {
                     </div>
                 </div>
             )}
-
           </div>
         </div>
       </div>
