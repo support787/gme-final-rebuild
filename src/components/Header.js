@@ -3,20 +3,19 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useAuth } from '../lib/AuthContext'; // <-- Import the useAuth hook
+import { useAuth } from '../lib/AuthContext';
 
 export const Header = () => {
-    const { user, isAdmin, signIn, logOut } = useAuth(); // <-- Get user state and functions
+    const { user, isAdmin, signIn, logOut } = useAuth();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const pathname = usePathname();
     const isHomePage = pathname === '/';
 
     const headerClasses = isHomePage && !isMobileMenuOpen ? 'absolute top-0 left-0 right-0 z-50 bg-transparent' : 'sticky top-0 z-50 bg-white shadow-md';
     const linkBaseColor = isHomePage && !isMobileMenuOpen ? 'text-white' : 'text-gray-600';
-    const linkHoverColor = isHomePage && !isMobileMenuOpen ? 'hover:text-gray-200' : 'hover:text-teal-600';
     const logoTextColor = isHomePage && !isMobileMenuOpen ? 'text-white' : 'text-gray-800';
     const logoSubTextColor = isHomePage && !isMobileMenuOpen ? 'text-gray-200' : 'text-gray-500';
-    
+
     const navLinkClasses = (href) => {
         const isActive = pathname === href;
         const activeColor = 'text-teal-600 font-semibold';
@@ -25,7 +24,7 @@ export const Header = () => {
         if (isActive) {
             return `transition duration-300 cursor-pointer pb-1 ${isHomePage && !isMobileMenuOpen ? homeActiveColor : activeColor}`;
         }
-        return `transition duration-300 cursor-pointer pb-1 ${linkBaseColor} ${linkHoverColor}`;
+        return `transition duration-300 cursor-pointer pb-1 ${linkBaseColor} hover:text-teal-600`;
     };
     
     const svgStrokeColor = '#0D9488';
@@ -45,6 +44,7 @@ export const Header = () => {
                         <span className={`text-xs font-semibold ${logoSubTextColor} tracking-wider leading-tight`}>Medical Equipment, Inc.</span>
                     </div>
                 </Link>
+                {/* --- THIS IS THE DESKTOP MENU --- */}
                 <div className="hidden md:flex items-center space-x-8">
                     <Link href="/" className={navLinkClasses('/')}>Home</Link>
                     <Link href="/products/Systems" className={navLinkClasses('/products/Systems')}>Systems</Link>
@@ -52,7 +52,6 @@ export const Header = () => {
                     <Link href="/about" className={navLinkClasses('/about')}>About Us</Link>
                     <Link href="/contact" className={navLinkClasses('/contact')}>Contact Us</Link>
                     <div className="flex items-center space-x-4 pl-4 border-l border-gray-200/50">
-                       {/* --- DYNAMIC LOGIN/LOGOUT --- */}
                        {user ? (
                            <>
                                 <span className={`text-sm font-medium ${linkBaseColor}`}>{isAdmin ? 'Admin:' : ''} {user.displayName}</span>
@@ -63,8 +62,33 @@ export const Header = () => {
                        )}
                     </div>
                 </div>
-                {/* Mobile Menu Code... */}
+                {/* --- THIS IS THE MOBILE MENU BUTTON (HAMBURGER) --- */}
+                <div className="md:hidden">
+                    <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+                        <svg className={`w-6 h-6 ${isHomePage && !isMobileMenuOpen ? 'text-white' : 'text-gray-800'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={isMobileMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"}></path></svg>
+                    </button>
+                </div>
             </nav>
+            {/* --- THIS IS THE MOBILE MENU DROPDOWN --- */}
+            {isMobileMenuOpen && (
+                <div className="md:hidden bg-white py-4">
+                    <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="block py-2 px-6 text-gray-600 hover:bg-gray-100">Home</Link>
+                    <Link href="/products/Systems" onClick={() => setIsMobileMenuOpen(false)} className="block py-2 px-6 text-gray-600 hover:bg-gray-100">Systems</Link>
+                    <Link href="/products/Parts" onClick={() => setIsMobileMenuOpen(false)} className="block py-2 px-6 text-gray-600 hover:bg-gray-100">Parts</Link>
+                    <Link href="/about" onClick={() => setIsMobileMenuOpen(false)} className="block py-2 px-6 text-gray-600 hover:bg-gray-100">About Us</Link>
+                    <Link href="/contact" onClick={() => setIsMobileMenuOpen(false)} className="block py-2 px-6 text-gray-600 hover:bg-gray-100">Contact Us</Link>
+                     <div className="border-t border-gray-200 mt-4 pt-4 px-6">
+                       {user ? (
+                           <div className="space-y-2">
+                            <p className="text-sm text-gray-500">{isAdmin ? 'Admin:' : ''} {user.displayName}</p>
+                            <button onClick={() => { logOut(); setIsMobileMenuOpen(false); }} className="w-full text-left text-teal-600 font-semibold">Sign Out</button>
+                           </div>
+                       ) : (
+                           <button onClick={() => { signIn(); setIsMobileMenuOpen(false); }} className="w-full text-left text-teal-600 font-semibold">Admin Login</button>
+                       )}
+                    </div>
+                </div>
+            )}
         </header>
     );
 };
