@@ -1,9 +1,10 @@
-// src/app/page.js
 "use client";
 
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+// 1. Correct the import path for the PartsSearchBar component
+import PartsSearchBar from '../components/PartsSearchBar';
 
 const ModalityCard = ({ name, imageUrl }) => (
   <Link href="/products/Systems" className="group block text-center cursor-pointer">
@@ -56,7 +57,13 @@ export default function Home() {
       
       <section className="bg-slate-50 py-20">
         <div className="container mx-auto px-6">
-          <h2 className="text-center text-3xl font-bold text-gray-800 mb-12">We Buy and Sell All Modalities</h2>
+          <h2 className="text-center text-3xl font-bold text-gray-800 mb-6">Quich Search Our Parts Inventory</h2>
+          
+          {/* 2. Add the search bar component here */}
+          <div className="mb-12 flex justify-center">
+            <PartsSearchBar />
+          </div>
+
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8">
             {modalities.map(modality => (
               <ModalityCard key={modality.name} name={modality.name} imageUrl={modality.imageUrl} />
@@ -90,3 +97,5 @@ export default function Home() {
     </>
   )
 }
+
+

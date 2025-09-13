@@ -1,33 +1,42 @@
-// src/app/products/[category]/page.js
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useState, useEffect, useMemo, Suspense } from 'react';
+// 1. IMPORT useSearchParams to read URL queries
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../../lib/firebase';
 import { ProductCard } from '../../../components/ProductCard';
 import Link from 'next/link';
-import { useAuth } from '../../../lib/AuthContext'; // <-- Import the useAuth hook
+import { useAuth } from '../../../lib/AuthContext';
 
 const ITEMS_PER_PAGE = 20;
 
-export default function ProductsPage() {
-  const { isAdmin } = useAuth(); // <-- Get real admin status
+// A new inner component to safely use useSearchParams
+function ProductPageContent() {
+  const { isAdmin } = useAuth();
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams(); // Get URL search parameters
   const category = params.category;
 
   const [allProducts, setAllProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  
   // State for filters and pagination
   const [searchTerm, setSearchTerm] = useState('');
-  const [modalityFilter, setModalityFilter] = useState(''); // Changed to empty string
-  const [brandFilter, setBrandFilter] = useState(''); // Changed to empty string
-  const [locationFilter, setLocationFilter] = useState(''); // Changed to empty string
+  const [modalityFilter, setModalityFilter] = useState('');
+  const [brandFilter, setBrandFilter] = useState('');
+  const [locationFilter, setLocationFilter] = useState('');
   const [pageNumber, setPageNumber] = useState(1);
   
+  // 2. NEW useEffect: This runs when the page loads to check for a search term in the URL
+  useEffect(() => {
+    const initialSearch = searchParams.get('search');
+    if (initialSearch) {
+      setSearchTerm(initialSearch);
+    }
+  }, [searchParams]); // It re-runs if the search params change
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -68,7 +77,6 @@ export default function ProductsPage() {
     if (searchTerm) {
         currentProducts = currentProducts.filter(p => (p.description || '').toLowerCase().includes(searchTerm.toLowerCase()));
     }
-    // Updated filtering logic for text fields
     if (modalityFilter) {
         currentProducts = currentProducts.filter(p => (p.modality || '').toLowerCase().includes(modalityFilter.toLowerCase()));
     }
@@ -103,17 +111,17 @@ export default function ProductsPage() {
         <p className="text-center text-gray-800 my-8">Search and filter through our extensive inventory</p>
         
         <div className={`bg-white p-6 rounded-lg shadow-md mb-12 grid grid-cols-1 md:grid-cols-2 ${isAdmin && !isSystemsPage ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-4 items-end`}>
-             {!isSystemsPage && (
+            {!isSystemsPage && (
                 <div>
                     <label htmlFor="search" className="block text-sm font-medium text-gray-700">Part Number or Name</label>
                     <input type="text" id="search" placeholder="e.g., Siemens Coil..." className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" value={searchTerm} onChange={(e) => {setSearchTerm(e.target.value); setPageNumber(1);}} />
                 </div>
-             )}
-             <div>
+            )}
+            <div>
                 <label className="block text-sm font-medium text-gray-700">Modality</label>
                 <input type="text" placeholder="Type to search..." className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" value={modalityFilter} onChange={(e) => {setModalityFilter(e.target.value); setPageNumber(1);}} />
             </div>
-             <div>
+            <div>
                 <label className="block text-sm font-medium text-gray-700">Manufacturer</label>
                 <input type="text" placeholder="Type to search..." className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" value={brandFilter} onChange={(e) => {setBrandFilter(e.target.value); setPageNumber(1);}} />
             </div>
@@ -161,5 +169,14 @@ export default function ProductsPage() {
          { !isLoading && filteredProducts.length === 0 && <p className="text-center text-gray-500 mt-8">No products found.</p>}
       </div>
     </section>
+  );
+}
+
+// A new wrapper component to handle Suspense
+export default function ProductsPage() {
+  return (
+    <Suspense fallback={<div>Loading Page...</div>}>
+      <ProductPageContent />
+    </Suspense>
   );
 }
