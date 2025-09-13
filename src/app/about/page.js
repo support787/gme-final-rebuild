@@ -18,7 +18,10 @@ export default function AboutPage() {
               <p>We are a large used medical equipment and parts dealer and supplier based in the United States, specializing in buying/selling complete used medical imaging systems and their parts in good working condition and at the most competitive prices. We operate our business professionally and honestly and have gained the best reputation and trust by our customers and suppliers all over the world throughout the past 30 plus years.</p>
               <p>Our pre-owned diagnostic imaging systems include CT scanners, MRI scanners, Cath and angio labs, Mammography, cardiac labs, PET/CT scanners, Ultrasound systems, Digital radiology(DR) rooms and fluoroscopy(R/F) rooms.</p>
               <p>We also have a huge inventory of used parts for sale. Our warehouse constantly has complete systems and spare parts in stock for all brands and modalities.</p>
-              <p>We only sell systems and parts that we completely own.</p>
+              <div>
+            <Image src={'https://firebasestorage.googleapis.com/v0/b/grand-medical-website.firebasestorage.app/o/image.jpg?alt=media&token=dfc6a5be-3323-409a-9964-5f6538dee19f'} alt="Warehouse" width={800} height={600} className="rounded-lg shadow-lg"/>
+          </div>
+
             </div>
           </div>
         </div>
