@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useMemo, Suspense } from 'react';
-// 1. IMPORT useSearchParams to read URL queries
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../../lib/firebase';
@@ -11,12 +10,11 @@ import { useAuth } from '../../../lib/AuthContext';
 
 const ITEMS_PER_PAGE = 20;
 
-// A new inner component to safely use useSearchParams
+// An inner component to safely use useSearchParams
 function ProductPageContent() {
   const { isAdmin } = useAuth();
   const params = useParams();
-  const router = useRouter();
-  const searchParams = useSearchParams(); // Get URL search parameters
+  const searchParams = useSearchParams();
   const category = params.category;
 
   const [allProducts, setAllProducts] = useState([]);
@@ -29,13 +27,11 @@ function ProductPageContent() {
   const [locationFilter, setLocationFilter] = useState('');
   const [pageNumber, setPageNumber] = useState(1);
   
-  // 2. NEW useEffect: This runs when the page loads to check for a search term in the URL
+  // This useEffect sets the initial filter states from the URL
   useEffect(() => {
-    const initialSearch = searchParams.get('search');
-    if (initialSearch) {
-      setSearchTerm(initialSearch);
-    }
-  }, [searchParams]); // It re-runs if the search params change
+    setSearchTerm(searchParams.get('search') || '');
+    setModalityFilter(searchParams.get('modality') || '');
+  }, [searchParams]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -74,17 +70,33 @@ function ProductPageContent() {
 
   const filteredProducts = useMemo(() => {
     let currentProducts = allProducts;
-    if (searchTerm) {
-        currentProducts = currentProducts.filter(p => (p.description || '').toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    // ** UPDATED FILTERING LOGIC **
+    // We now use .trim() to remove whitespace before comparing, making the match more reliable.
+
+    if (searchTerm.trim()) {
+        const lowercasedFilter = searchTerm.trim().toLowerCase();
+        currentProducts = currentProducts.filter(p => 
+            (p.description || '').toLowerCase().includes(lowercasedFilter)
+        );
     }
-    if (modalityFilter) {
-        currentProducts = currentProducts.filter(p => (p.modality || '').toLowerCase().includes(modalityFilter.toLowerCase()));
+    if (modalityFilter.trim()) {
+        const lowercasedFilter = modalityFilter.trim().toLowerCase();
+        currentProducts = currentProducts.filter(p => 
+            (p.modality || '').toLowerCase().includes(lowercasedFilter)
+        );
     }
-    if (brandFilter) {
-        currentProducts = currentProducts.filter(p => (p.brand || '').toLowerCase().includes(brandFilter.toLowerCase()));
+    if (brandFilter.trim()) {
+        const lowercasedFilter = brandFilter.trim().toLowerCase();
+        currentProducts = currentProducts.filter(p => 
+            (p.brand || '').toLowerCase().includes(lowercasedFilter)
+        );
     }
-    if (locationFilter) {
-        currentProducts = currentProducts.filter(p => (p.location || '').toLowerCase().includes(locationFilter.toLowerCase()));
+    if (locationFilter.trim()) {
+        const lowercasedFilter = locationFilter.trim().toLowerCase();
+        currentProducts = currentProducts.filter(p => 
+            (p.location || '').toLowerCase().includes(lowercasedFilter)
+        );
     }
     return currentProducts;
   }, [allProducts, searchTerm, modalityFilter, brandFilter, locationFilter]);
@@ -172,7 +184,7 @@ function ProductPageContent() {
   );
 }
 
-// A new wrapper component to handle Suspense
+// A wrapper component to handle Suspense
 export default function ProductsPage() {
   return (
     <Suspense fallback={<div>Loading Page...</div>}>
@@ -180,3 +192,5 @@ export default function ProductsPage() {
     </Suspense>
   );
 }
+
+

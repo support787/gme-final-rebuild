@@ -3,11 +3,12 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-// 1. Correct the import path for the PartsSearchBar component
+// CORRECTED: The path is now correctly pointing from 'src/app' to 'src/components'
 import PartsSearchBar from '../components/PartsSearchBar';
 
 const ModalityCard = ({ name, imageUrl }) => (
-  <Link href="/products/Systems" className="group block text-center cursor-pointer">
+  // UPDATED: This now links to the Systems page and passes the modality name as a filter
+  <Link href={`/products/Systems?modality=${encodeURIComponent(name)}`} className="group block text-center cursor-pointer">
     <div className="aspect-w-1 aspect-h-1 bg-gray-100 rounded-lg overflow-hidden group-hover:shadow-lg transition duration-300">
       <div className="w-full h-full flex items-center justify-center">
         <Image 
@@ -25,8 +26,7 @@ const ModalityCard = ({ name, imageUrl }) => (
 
 export default function Home() {
   const heroBackgroundImage = 'https://firebasestorage.googleapis.com/v0/b/grand-medical-website.firebasestorage.app/o/mri%20image.jpg?alt=media&token=40eedff6-4ec0-4d52-86e9-022d02cb5344';
-  const warehouseImage = 'https://firebasestorage.googleapis.com/v0/b/grand-medical-website.firebasestorage.app/o/image.jpg?alt=media&token=dfc6a5be-3323-409a-9964-5f6538dee19f';
-
+  
   const modalities = [
     { name: "MRI", imageUrl: "https://firebasestorage.googleapis.com/v0/b/grand-medical-website.firebasestorage.app/o/MRI%20sample.jpg?alt=media&token=c7524a27-de71-4e5b-a4cc-e552eb2cb65e" },
     { name: "CT", imageUrl: "https://firebasestorage.googleapis.com/v0/b/grand-medical-website.firebasestorage.app/o/CT%20Sample.jpg?alt=media&token=355a9618-53ea-4b6c-93a0-2a320c0f8d7d" },
@@ -34,10 +34,10 @@ export default function Home() {
     { name: "PET/CT", imageUrl: "https://firebasestorage.googleapis.com/v0/b/grand-medical-website.firebasestorage.app/o/PET%20sample.jpg?alt=media&token=6e8aff9f-d2a2-47be-b533-91c45fe8be4d" },
     { name: "MAMMO", imageUrl: "https://firebasestorage.googleapis.com/v0/b/grand-medical-website.firebasestorage.app/o/Mammo%20sample.jpg?alt=media&token=d9e09363-5a7e-4e34-8537-ec66fd0e2738" },
     { name: "SPECT/CT", imageUrl: "https://firebasestorage.googleapis.com/v0/b/grand-medical-website.firebasestorage.app/o/spec%20samp.jpg?alt=media&token=9b9bc5c7-24b8-447f-b470-bbeda32f44fb" },
-{ name: "C-ARM", imageUrl: "https://firebasestorage.googleapis.com/v0/b/grand-medical-website.firebasestorage.app/o/C-arm%20sample.jpg?alt=media&token=b2775edb-d24f-4177-8daf-6bbfef1ff320" },
+    { name: "C-ARM", imageUrl: "https://firebasestorage.googleapis.com/v0/b/grand-medical-website.firebasestorage.app/o/C-arm%20sample.jpg?alt=media&token=b2775edb-d24f-4177-8daf-6bbfef1ff320" },
     { name: "DR", imageUrl: "https://firebasestorage.googleapis.com/v0/b/grand-medical-website.firebasestorage.app/o/DR%20sample.jpg?alt=media&token=14bd6bae-e466-4199-a119-75b793cc4fd4" },
     { name: "R/F", imageUrl: "https://firebasestorage.googleapis.com/v0/b/grand-medical-website.firebasestorage.app/o/RF%20sample.jpg?alt=media&token=70df59e8-68a2-4605-aadb-6904c9a44ac4" },
-{ name: "ULTRASOUND", imageUrl: "https://firebasestorage.googleapis.com/v0/b/grand-medical-website.firebasestorage.app/o/ultra%20sample.jpg?alt=media&token=f2bf339c-88dc-4e0c-9709-73d0fa284c4f" }
+    { name: "ULTRASOUND", imageUrl: "https://firebasestorage.googleapis.com/v0/b/grand-medical-website.firebasestorage.app/o/ultra%20sample.jpg?alt=media&token=f2bf339c-88dc-4e0c-9709-73d0fa284c4f" }
   ];
 
   return (
@@ -54,11 +54,10 @@ export default function Home() {
         </div>
       </section>
 
-Quick Search For Parts
       
       <section className="bg-slate-50 py-20">
         <div className="container mx-auto px-6">
-           {/* === UPDATED SEARCH SECTION START === */}
+
           <div className="bg-white rounded-lg shadow-lg p-8 md:p-12 mb-16 max-w-4xl mx-auto">
             <h2 className="text-center text-3xl md:text-4xl font-bold text-gray-800 mb-2">
               Quick Search For Parts
@@ -70,7 +69,6 @@ Quick Search For Parts
               <PartsSearchBar />
             </div>
           </div>
-          {/* === UPDATED SEARCH SECTION END === */}
 
           <h3 className="text-center text-3xl font-bold text-gray-800 mb-12">Browse All Modalities</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8">

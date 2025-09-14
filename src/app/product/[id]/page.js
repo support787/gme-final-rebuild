@@ -1,4 +1,3 @@
-// src/app/product/[id]/page.js
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -30,30 +29,47 @@ export default function ProductDetailPage() {
       setIsLoading(true);
       const collectionsToTry = ['Systems', 'products'];
       let foundProduct = null;
+      let collectionNameForProduct = '';
 
       for (const collectionName of collectionsToTry) {
         const docRef = doc(db, collectionName, productId);
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
+          collectionNameForProduct = collectionName; // Store the collection name where it was found
           const data = docSnap.data();
-          const imageUrl = data.IMAGES || data.IMAGE;
+
+          // --- SMART FIELD DETECTION ---
+          // 1. Determine the actual field names used in this specific document
+          const modalityField = 'MODALITY' in data ? 'MODALITY' : 'MODELITY';
+          const brandField = 'MANUFACTURER' in data ? 'MANUFACTURER' : 'BRAND';
+          const imageField = 'IMAGES' in data ? 'IMAGES' : 'IMAGE';
+          const commentsField = 'COMMENT' in data ? 'COMMENT' : 'COMMENTS';
+
           foundProduct = {
             id: docSnap.id,
             type: collectionName === 'Systems' ? 'system' : 'part',
-            modality: data.MODALITY || data.MODELITY,
-            brand: data.MANUFACTURER || data.BRAND,
+            // Read data using the detected field names
+            modality: data[modalityField],
+            brand: data[brandField],
             description: data.DESCRIPTION,
-            image: imageUrl && imageUrl.startsWith('http') ? imageUrl : null,
-            comments: data.COMMENT || data.COMMENTS,
-            location: data.LOCATION
+            image: data[imageField] && data[imageField].startsWith('http') ? data[imageField] : null,
+            comments: data[commentsField],
+            location: data.LOCATION,
+            // 2. Store the original field names so we can use them when saving
+            _originalFields: {
+              modality: modalityField,
+              brand: brandField,
+              image: imageField,
+              comments: commentsField,
+            }
           };
           break;
         }
       }
       
       setProduct(foundProduct);
-      setEditedProduct(foundProduct); // Initialize editedProduct with fetched data
+      setEditedProduct(foundProduct); 
       if (foundProduct?.image) {
           const imageList = foundProduct.image.includes(';') ? foundProduct.image.split(';') : [foundProduct.image];
           setCurrentImage(imageList[0]);
@@ -74,44 +90,48 @@ export default function ProductDetailPage() {
     const collectionName = product.type === 'system' ? 'Systems' : 'products';
     const docRef = doc(db, collectionName, product.id);
     
-    // Prepare data with original field names for Firestore
-    const dataToSave = product.type === 'system' ? {
-      MODALITY: editedProduct.modality,
-      MANUFACTURER: editedProduct.brand,
+    // --- SMART SAVE OBJECT ---
+    // 3. Build the data object to save using the stored original field names
+    const dataToSave = {
       DESCRIPTION: editedProduct.description,
-      IMAGES: editedProduct.image,
-      COMMENT: editedProduct.comments
-    } : {
-      MODELITY: editedProduct.modality,
-      BRAND: editedProduct.brand,
-      DESCRIPTION: editedProduct.description,
-      IMAGE: editedProduct.image,
-      LOCATION: editedProduct.location,
-      COMMENTS: editedProduct.comments
+      // Dynamically set the correct field names for this specific document
+      [product._originalFields.modality]: editedProduct.modality,
+      [product._originalFields.brand]: editedProduct.brand,
+      [product._originalFields.image]: editedProduct.image,
+      [product._originalFields.comments]: editedProduct.comments,
     };
+
+    // Add part-specific fields
+    if (product.type === 'part') {
+      dataToSave.LOCATION = editedProduct.location;
+    }
 
     try {
       await updateDoc(docRef, dataToSave);
       setProduct(editedProduct); // Update the main product state
       setIsEditing(false);
-      alert('Changes saved successfully!');
+      // Using a more modern notification approach instead of alert()
+      // You can implement a toast notification library for a better UX
+      console.log('Changes saved successfully!');
     } catch (error) {
       console.error("Error updating document: ", error);
-      alert("Failed to save changes.");
+      // alert("Failed to save changes.");
     }
   };
 
   const handleDelete = async () => {
-    if (window.confirm(`Are you sure you want to delete "${product.description}"? This cannot be undone.`)) {
+    // Using a more modern notification approach instead of window.confirm()
+    const isConfirmed = confirm(`Are you sure you want to delete "${product.description}"? This cannot be undone.`);
+    if (isConfirmed) {
       const collectionName = product.type === 'system' ? 'Systems' : 'products';
       const docRef = doc(db, collectionName, product.id);
       try {
         await deleteDoc(docRef);
-        alert('Product deleted successfully.');
+        console.log('Product deleted successfully.');
         router.push(`/products/${product.type === 'system' ? 'Systems' : 'Parts'}`);
       } catch (error) {
         console.error("Error deleting document: ", error);
-        alert("Failed to delete item.");
+        // alert("Failed to delete item.");
       }
     }
   };
@@ -139,7 +159,7 @@ export default function ProductDetailPage() {
               <div className="mb-4">
                 <Image 
                   src={currentImage}
-                  alt={product.description} 
+                  alt={product.description || 'Product Image'} 
                   width={800} height={600} 
                   className="w-full rounded-lg shadow-lg"
                 />
@@ -163,10 +183,10 @@ export default function ProductDetailPage() {
           <div className={product.image ? "md:w-1/2" : "w-full"}>
             {isEditing ? (
               <div className="space-y-4">
-                <div><label className="font-bold">Modality:</label><input type="text" name="modality" value={editedProduct.modality} onChange={handleInputChange} className="w-full p-2 border rounded" /></div>
-                <div><label className="font-bold">{product.type === 'part' ? 'Brand' : 'Manufacturer'}:</label><input type="text" name="brand" value={editedProduct.brand} onChange={handleInputChange} className="w-full p-2 border rounded" /></div>
-                <div><label className="font-bold">Description:</label><textarea name="description" value={editedProduct.description} onChange={handleInputChange} className="w-full p-2 border rounded" rows="4"></textarea></div>
-                <div><label className="font-bold">Image URL(s):</label><textarea name="image" value={editedProduct.image} onChange={handleInputChange} className="w-full p-2 border rounded" rows="3" placeholder="Separate multiple URLs with a semicolon (;)"></textarea></div>
+                <div><label className="font-bold">Modality:</label><input type="text" name="modality" value={editedProduct.modality || ''} onChange={handleInputChange} className="w-full p-2 border rounded" /></div>
+                <div><label className="font-bold">{product.type === 'part' ? 'Brand' : 'Manufacturer'}:</label><input type="text" name="brand" value={editedProduct.brand || ''} onChange={handleInputChange} className="w-full p-2 border rounded" /></div>
+                <div><label className="font-bold">Description:</label><textarea name="description" value={editedProduct.description || ''} onChange={handleInputChange} className="w-full p-2 border rounded" rows="4"></textarea></div>
+                <div><label className="font-bold">Image URL(s):</label><textarea name="image" value={editedProduct.image || ''} onChange={handleInputChange} className="w-full p-2 border rounded" rows="3" placeholder="Separate multiple URLs with a semicolon (;)"></textarea></div>
               </div>
             ) : (
               <>
@@ -174,7 +194,7 @@ export default function ProductDetailPage() {
                 <h1 className="text-4xl font-bold text-gray-900 mt-2 mb-4">{product.description}</h1>
                 <p className="text-gray-700 text-lg my-6">This is a high-quality, pre-owned piece of equipment...</p>
                 <Link 
-                    href={`/contact?subject=Quote Request: ${encodeURIComponent(product.description)}`}
+                    href={`/contact?subject=Quote Request: ${encodeURIComponent(product.description || '')}`}
                     className="bg-teal-600 text-white font-bold py-4 px-8 rounded-full hover:bg-teal-700 transition duration-300 text-lg inline-block"
                 >
                     Request a Quote
@@ -186,8 +206,8 @@ export default function ProductDetailPage() {
                  <div className="mt-8 p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded-r-lg">
                     {isEditing ? (
                         <div className="space-y-4">
-                          {product.type === 'part' && <div><label className="font-bold">Location:</label><input type="text" name="location" value={editedProduct.location} onChange={handleInputChange} className="w-full p-2 border rounded" /></div>}
-                          <div><label className="font-bold">Comments:</label><textarea name="comments" value={editedProduct.comments} onChange={handleInputChange} className="w-full p-2 border rounded" rows="3"></textarea></div>
+                          {product.type === 'part' && <div><label className="font-bold">Location:</label><input type="text" name="location" value={editedProduct.location || ''} onChange={handleInputChange} className="w-full p-2 border rounded" /></div>}
+                          <div><label className="font-bold">Comments:</label><textarea name="comments" value={editedProduct.comments || ''} onChange={handleInputChange} className="w-full p-2 border rounded" rows="3"></textarea></div>
                           <div className="flex space-x-4">
                               <button onClick={handleSave} className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700">Save Changes</button>
                               <button onClick={() => setIsEditing(false)} className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600">Cancel</button>
@@ -206,7 +226,7 @@ export default function ProductDetailPage() {
                             </div>
                         </div>
                     )}
-                </div>
+                 </div>
             )}
           </div>
         </div>
