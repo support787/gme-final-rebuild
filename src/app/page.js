@@ -3,11 +3,9 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-// CORRECTED: The path is now correctly pointing from 'src/app' to 'src/components'
 import PartsSearchBar from '../components/PartsSearchBar';
 
 const ModalityCard = ({ name, imageUrl }) => (
-  // UPDATED: This now links to the Systems page and passes the modality name as a filter
   <Link href={`/products/Systems?modality=${encodeURIComponent(name)}`} className="group block text-center cursor-pointer">
     <div className="aspect-w-1 aspect-h-1 bg-gray-100 rounded-lg overflow-hidden group-hover:shadow-lg transition duration-300">
       <div className="w-full h-full flex items-center justify-center">
@@ -44,13 +42,15 @@ export default function Home() {
     <>
       <section className="relative text-white hero-section flex items-center justify-center">
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url('${heroBackgroundImage}')` }}>
-          <div className="absolute inset-0 bg-black/50"></div>
+          {/* UPDATED: Overlay is now lighter (20% opacity instead of 50%) */}
+          <div className="absolute inset-0 bg-black/20"></div>
         </div>
         <div className="relative container mx-auto px-6 text-center pt-24">
-          <h1 className="text-4xl md:text-6xl font-bold mb-4 uppercase tracking-wider">
+          {/* UPDATED: Added a text shadow for better readability */}
+          <h1 className="text-4xl md:text-6xl font-bold mb-4 uppercase tracking-wider [text-shadow:0_2px_4px_rgba(0,0,0,0.6)]">
             Grand Medical Equipment<sup className="text-2xl md:text-4xl top-[-0.5em]">®</sup>
           </h1>
-          <p className="text-lg md:text-xl mb-8 max-w-3xl mx-auto">Your Trusted Source of Pre-Owned Medical Equipment and Parts for 30+ Years</p>
+          <p className="text-lg md:text-xl mb-8 max-w-3xl mx-auto [text-shadow:0_1px_3px_rgba(0,0,0,0.5)]">Your Trusted Source of Pre-Owned Medical Equipment and Parts for 30+ Years</p>
         </div>
       </section>
 
@@ -104,5 +104,4 @@ export default function Home() {
     </>
   )
 }
-
 

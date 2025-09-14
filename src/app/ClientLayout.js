@@ -6,7 +6,7 @@ import { initializeApp, getApps } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
 
 const firebaseConfig = {
-    apiKey: "AIzaSyB_Vr_c4TY0fHROk4gMGkTcj52KnU-LTe4",
+    apiKey: process.env.NEXT_PUBLIC_GOOGLE_API_KEY,
     authDomain: "grand-medical-website.firebaseapp.com",
     projectId: "grand-medical-website",
     storageBucket: "grand-medical-website.appspot.com",
