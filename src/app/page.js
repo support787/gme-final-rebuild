@@ -54,16 +54,25 @@ export default function Home() {
         </div>
       </section>
 
+Quick Search For Parts
       
       <section className="bg-slate-50 py-20">
         <div className="container mx-auto px-6">
-          <h2 className="text-center text-3xl font-bold text-gray-800 mb-6">Quick Search For Parts</h2>
-          
-          {/* 2. Add the search bar component here */}
-          <div className="mb-12 flex justify-center">
-            <PartsSearchBar />
+           {/* === UPDATED SEARCH SECTION START === */}
+          <div className="bg-white rounded-lg shadow-lg p-8 md:p-12 mb-16 max-w-4xl mx-auto">
+            <h2 className="text-center text-3xl md:text-4xl font-bold text-gray-800 mb-2">
+              Quick Search For Parts
+            </h2>
+            <p className="text-center text-gray-600 mb-8">
+              Find the exact part you need from our extensive inventory.
+            </p>
+            <div className="flex justify-center">
+              <PartsSearchBar />
+            </div>
           </div>
+          {/* === UPDATED SEARCH SECTION END === */}
 
+          <h3 className="text-center text-3xl font-bold text-gray-800 mb-12">Browse All Modalities</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8">
             {modalities.map(modality => (
               <ModalityCard key={modality.name} name={modality.name} imageUrl={modality.imageUrl} />
