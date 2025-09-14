@@ -22,7 +22,7 @@ export default function PartsSearchBar() {
           type="text"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="Search by Part Number or Name..."
+          placeholder="Enter Part Number or Name or Description..."
           className="w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-teal-500"
         />
         <button

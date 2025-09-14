@@ -57,7 +57,7 @@ export default function Home() {
       
       <section className="bg-slate-50 py-20">
         <div className="container mx-auto px-6">
-          <h2 className="text-center text-3xl font-bold text-gray-800 mb-6">Quich Search Our Parts Inventory</h2>
+          <h2 className="text-center text-3xl font-bold text-gray-800 mb-6">Quick Search For Parts</h2>
           
           {/* 2. Add the search bar component here */}
           <div className="mb-12 flex justify-center">
