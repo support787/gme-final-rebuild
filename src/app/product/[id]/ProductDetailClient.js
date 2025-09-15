@@ -7,8 +7,9 @@ import { db } from '../../../lib/firebase';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth } from '../../../lib/AuthContext';
+// 1. Import the new QuoteModal component
+import QuoteModal from '../../../components/QuoteModal';
 
-// All of your original client logic is now in this component.
 export default function ProductDetailClient() {
   const params = useParams();
   const router = useRouter();
@@ -21,6 +22,9 @@ export default function ProductDetailClient() {
   
   const [isEditing, setIsEditing] = useState(false);
   const [editedProduct, setEditedProduct] = useState(null);
+
+  // 2. Add state to control the visibility of the quote modal
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     if (!productId) return;
@@ -131,90 +135,103 @@ export default function ProductDetailClient() {
   const displayComments = product.comments && !product.comments.startsWith('http') ? product.comments : 'No comments.';
 
   return (
-    <div className="bg-white py-20">
-      <div className="container mx-auto px-6">
-        <button onClick={() => router.back()} className="text-teal-600 hover:underline mb-8 inline-block">
-          ← Back to previous page
-        </button>
-        <div className="flex flex-col md:flex-row gap-12">
-          {product.image && (
-            <div className="md:w-1/2">
-              <div className="mb-4">
-                <Image 
-                  src={currentImage}
-                  alt={product.description || 'Product Image'} 
-                  width={800} height={600} 
-                  className="w-full rounded-lg shadow-lg"
-                  onError={() => setCurrentImage('https://placehold.co/800x600/eee/ccc?text=Image+Not+Found')}
-                />
-              </div>
-              {imageList.length > 1 && (
-                <div className="grid grid-cols-5 gap-2">
-                  {imageList.map((img, index) => (
-                    <Image
-                      key={index}
-                      src={img}
-                      alt={`Thumbnail ${index + 1}`}
-                      width={200} height={150}
-                      className={`w-full h-20 object-cover rounded-md cursor-pointer border-2 ${currentImage === img ? 'border-teal-500' : 'border-transparent'}`}
-                      onClick={() => setCurrentImage(img)}
-                    />
-                  ))}
+    // We wrap everything in a React fragment <> to render the modal alongside the page
+    <>
+      <div className="bg-white py-20">
+        <div className="container mx-auto px-6">
+          <button onClick={() => router.back()} className="text-teal-600 hover:underline mb-8 inline-block">
+            ← Back to previous page
+          </button>
+          <div className="flex flex-col md:flex-row gap-12">
+            {product.image && (
+              <div className="md:w-1/2">
+                <div className="mb-4">
+                  <Image 
+                    src={currentImage}
+                    alt={product.description || 'Product Image'} 
+                    width={800} height={600} 
+                    className="w-full rounded-lg shadow-lg"
+                    onError={() => setCurrentImage('https://placehold.co/800x600/eee/ccc?text=Image+Not+Found')}
+                  />
                 </div>
+                {imageList.length > 1 && (
+                  <div className="grid grid-cols-5 gap-2">
+                    {imageList.map((img, index) => (
+                      <Image
+                        key={index}
+                        src={img}
+                        alt={`Thumbnail ${index + 1}`}
+                        width={200} height={150}
+                        className={`w-full h-20 object-cover rounded-md cursor-pointer border-2 ${currentImage === img ? 'border-teal-500' : 'border-transparent'}`}
+                        onClick={() => setCurrentImage(img)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            <div className={product.image ? "md:w-1/2" : "w-full"}>
+              {isEditing ? (
+                // This is the form when you are in "edit mode"
+                <div className="space-y-4">
+                  <div><label className="font-bold">Modality:</label><input type="text" name="modality" value={editedProduct.modality || ''} onChange={handleInputChange} className="w-full p-2 border rounded" /></div>
+                  <div><label className="font-bold">{product.type === 'part' ? 'Brand' : 'Manufacturer'}:</label><input type="text" name="brand" value={editedProduct.brand || ''} onChange={handleInputChange} className="w-full p-2 border rounded" /></div>
+                  <div><label className="font-bold">Description:</label><textarea name="description" value={editedProduct.description || ''} onChange={handleInputChange} className="w-full p-2 border rounded" rows="4"></textarea></div>
+                  <div><label className="font-bold">Image URL(s):</label><textarea name="image" value={editedProduct.image || ''} onChange={handleInputChange} className="w-full p-2 border rounded" rows="3" placeholder="Separate multiple URLs with a semicolon (;)"></textarea></div>
+                </div>
+              ) : (
+                // This is the normal view
+                <>
+                  <p className="text-lg text-gray-500">{product.modality} {product.brand ? `/ ${product.brand}` : ''}</p>
+                  <h1 className="text-4xl font-bold text-gray-900 mt-2 mb-4">{product.description}</h1>
+                  <p className="text-gray-700 text-lg my-6">This is a high-quality, pre-owned piece of equipment...</p>
+                  <button 
+                      onClick={() => setIsModalOpen(true)}
+                      className="bg-teal-600 text-white font-bold py-4 px-8 rounded-full hover:bg-teal-700 transition duration-300 text-lg inline-block"
+                  >
+                      Request a Quote
+                  </button>
+                </>
+              )}
+              
+              {/* RESTORED: This is the admin section */}
+              {isAdmin && (
+                  <div className="mt-8 p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded-r-lg">
+                      {isEditing ? (
+                          <div className="space-y-4">
+                            {product.type === 'part' && <div><label className="font-bold">Location:</label><input type="text" name="location" value={editedProduct.location || ''} onChange={handleInputChange} className="w-full p-2 border rounded" /></div>}
+                            <div><label className="font-bold">Comments:</label><textarea name="comments" value={editedProduct.comments || ''} onChange={handleInputChange} className="w-full p-2 border rounded" rows="3"></textarea></div>
+                            <div className="flex space-x-4">
+                                <button onClick={handleSave} className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700">Save Changes</button>
+                                <button onClick={() => setIsEditing(false)} className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600">Cancel</button>
+                            </div>
+                          </div>
+                      ) : (
+                          <div>
+                              <h3 className="text-xl font-bold text-yellow-800 mb-2">Internal Admin Notes</h3>
+                              <div className="text-yellow-700">
+                                  <p><strong className="font-semibold">Location:</strong> {product.location || 'N/A'}</p>
+                                  <p><strong className="font-semibold">Comments:</strong> {displayComments}</p>
+                              </div>
+                              <div className="mt-4 flex space-x-4">
+                                  <button onClick={() => setIsEditing(true)} className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">Edit Product</button>
+                                  <button onClick={handleDelete} className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700">Delete Product</button>
+                              </div>
+                          </div>
+                      )}
+                  </div>
               )}
             </div>
-          )}
-          <div className={product.image ? "md:w-1/2" : "w-full"}>
-            {isEditing ? (
-              <div className="space-y-4">
-                <div><label className="font-bold">Modality:</label><input type="text" name="modality" value={editedProduct.modality || ''} onChange={handleInputChange} className="w-full p-2 border rounded" /></div>
-                <div><label className="font-bold">{product.type === 'part' ? 'Brand' : 'Manufacturer'}:</label><input type="text" name="brand" value={editedProduct.brand || ''} onChange={handleInputChange} className="w-full p-2 border rounded" /></div>
-                <div><label className="font-bold">Description:</label><textarea name="description" value={editedProduct.description || ''} onChange={handleInputChange} className="w-full p-2 border rounded" rows="4"></textarea></div>
-                <div><label className="font-bold">Image URL(s):</label><textarea name="image" value={editedProduct.image || ''} onChange={handleInputChange} className="w-full p-2 border rounded" rows="3" placeholder="Separate multiple URLs with a semicolon (;)"></textarea></div>
-              </div>
-            ) : (
-              <>
-                <p className="text-lg text-gray-500">{product.modality} {product.brand ? `/ ${product.brand}` : ''}</p>
-                <h1 className="text-4xl font-bold text-gray-900 mt-2 mb-4">{product.description}</h1>
-                <p className="text-gray-700 text-lg my-6">This is a high-quality, pre-owned piece of equipment...</p>
-                <Link 
-                    href={`/contact?subject=Quote Request: ${encodeURIComponent(product.description || '')}`}
-                    className="bg-teal-600 text-white font-bold py-4 px-8 rounded-full hover:bg-teal-700 transition duration-300 text-lg inline-block"
-                >
-                    Request a Quote
-                </Link>
-              </>
-            )}
-            
-            {isAdmin && (
-                 <div className="mt-8 p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded-r-lg">
-                    {isEditing ? (
-                        <div className="space-y-4">
-                          {product.type === 'part' && <div><label className="font-bold">Location:</label><input type="text" name="location" value={editedProduct.location || ''} onChange={handleInputChange} className="w-full p-2 border rounded" /></div>}
-                          <div><label className="font-bold">Comments:</label><textarea name="comments" value={editedProduct.comments || ''} onChange={handleInputChange} className="w-full p-2 border rounded" rows="3"></textarea></div>
-                          <div className="flex space-x-4">
-                              <button onClick={handleSave} className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700">Save Changes</button>
-                              <button onClick={() => setIsEditing(false)} className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600">Cancel</button>
-                          </div>
-                        </div>
-                    ) : (
-                        <div>
-                            <h3 className="text-xl font-bold text-yellow-800 mb-2">Internal Admin Notes</h3>
-                            <div className="text-yellow-700">
-                                <p><strong className="font-semibold">Location:</strong> {product.location || 'N/A'}</p>
-                                <p><strong className="font-semibold">Comments:</strong> {displayComments}</p>
-                            </div>
-                            <div className="mt-4 flex space-x-4">
-                                <button onClick={() => setIsEditing(true)} className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">Edit Product</button>
-                                <button onClick={handleDelete} className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700">Delete Product</button>
-                            </div>
-                        </div>
-                    )}
-                 </div>
-            )}
           </div>
         </div>
       </div>
-    </div>
+      {/* This renders the modal */}
+      <QuoteModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        productDescription={product ? product.description : ''} 
+      />
+    </>
   );
 }
+

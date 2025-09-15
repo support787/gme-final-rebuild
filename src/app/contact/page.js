@@ -1,71 +1,94 @@
-// src/app/contact/page.js
+"use client";
 
-// This is for SEO
-export const metadata = {
-  title: "Contact Us | Grand Medical Equipment",
-  description: "Contact Grand Medical Equipment for inquiries about our used medical imaging systems and parts. We are based in Cranbury, NJ.",
-};
+import { useState } from 'react';
 
 export default function ContactPage() {
-  // This is a standard, secure URL for embedding Google Maps.
-  const mapEmbedUrl = "https://www.google.com/maps/embed/v1/place?key=$";
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    subject: '',
+    message: '',
+  });
+  const [status, setStatus] = useState(''); // '' | 'sending' | 'success' | 'error'
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setStatus('sending');
+
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        setStatus('success');
+      } else {
+        setStatus('error');
+      }
+    } catch (error) {
+      console.error('Form submission error:', error);
+      setStatus('error');
+    }
+  };
 
   return (
-    <section className="py-20 bg-white">
+    <div className="bg-slate-50 py-20">
       <div className="container mx-auto px-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
-          <div>
-            <h2 className="text-3xl font-bold text-gray-800 mb-6">Get In Touch</h2>
-            <div className="text-gray-600 space-y-4">
-              <p>We are here to help. Please use the form to send us a message, or contact us directly using the information below.</p>
+        <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-8 md:p-12">
+          
+          {status === 'success' ? (
+            <div className="text-center py-12">
+              <h2 className="text-3xl font-bold text-teal-600 mb-4">Thank You!</h2>
+              <p className="text-gray-700 text-lg">Your message has been sent successfully. We will get back to you shortly.</p>
             </div>
-            <div className="mt-8 pt-8 border-t border-gray-200">
-              <h3 className="text-2xl font-bold text-gray-800 mb-4">Our Location</h3>
-              <address className="text-gray-600 not-italic space-y-2">
-                <p><strong>Grand Medical Equipment, Inc.</strong></p>
-                <p>3 Corporate Drive<br />Cranbury, NJ 08512 USA</p>
-                <p><strong>Phone:</strong> +1 (888) 519-2788</p>
-                <p><strong>Email:</strong> support@grandmedicalequipment.com</p>
-              </address>
-              <div className="mt-4 h-64 bg-gray-200 rounded-lg">
-                <iframe
-                  title="Google Maps Location"
-                  width="100%"
-                  height="100%"
-                  frameBorder="0"
-                  style={{ border: 0 }}
-                  src={mapEmbedUrl}
-                  allowFullScreen>
-                </iframe>
+          ) : (
+            <>
+              <div className="text-center mb-12">
+                <h1 className="text-4xl font-bold text-gray-800">Contact Us</h1>
+                <p className="text-gray-600 mt-4">Have a question or need assistance? Fill out the form below and we'll get in touch.</p>
               </div>
-            </div>
-          </div>
-          <div>
-            <h2 className="text-3xl font-bold text-gray-800 mb-6">Send Us a Message</h2>
-            <form action="https://formspree.io/f/xwpqleeo" method="POST" className="space-y-6">
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700">Full Name <span className="text-red-500">*</span></label>
-                <input type="text" id="name" name="name" className="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500" required />
-              </div>
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email Address <span className="text-red-500">*</span></label>
-                <input type="email" id="email" name="email" className="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500" required />
-              </div>
-              <div>
-                <label htmlFor="subject" className="block text-sm font-medium text-gray-700">Subject</label>
-                <input type="text" id="subject" name="subject" className="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500" />
-              </div>
-              <div>
-                <label htmlFor="message" className="block text-sm font-medium text-gray-700">Message</label>
-                <textarea id="message" name="message" rows="5" className="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500"></textarea>
-              </div>
-              <div>
-                <button type="submit" className="w-full bg-teal-600 text-white font-bold py-3 px-6 rounded-full hover:bg-teal-700 transition duration-300">Send Message</button>
-              </div>
-            </form>
-          </div>
+
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label htmlFor="name" className="block text-sm font-medium text-gray-700">Full Name *</label>
+                    <input type="text" name="name" id="name" required value={formData.name} onChange={handleChange} className="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm" />
+                  </div>
+                  <div>
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email *</label>
+                    <input type="email" name="email" id="email" required value={formData.email} onChange={handleChange} className="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm" />
+                  </div>
+                </div>
+                <div>
+                  <label htmlFor="subject" className="block text-sm font-medium text-gray-700">Subject</label>
+                  <input type="text" name="subject" id="subject" value={formData.subject} onChange={handleChange} className="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm" />
+                </div>
+                <div>
+                  <label htmlFor="message" className="block text-sm font-medium text-gray-700">Message *</label>
+                  <textarea name="message" id="message" rows="6" required value={formData.message} onChange={handleChange} className="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm"></textarea>
+                </div>
+                <div className="flex justify-end items-center gap-4 pt-4">
+                  {status === 'error' && <p className="text-red-500 text-sm">Failed to send. Please try again.</p>}
+                  <button
+                    type="submit"
+                    className="bg-teal-600 text-white font-bold py-3 px-8 rounded-full hover:bg-teal-700 transition duration-300 disabled:bg-teal-400"
+                    disabled={status === 'sending'}
+                  >
+                    {status === 'sending' ? 'Sending...' : 'Send Message'}
+                  </button>
+                </div>
+              </form>
+            </>
+          )}
         </div>
       </div>
-    </section>
+    </div>
   );
 }
