@@ -1,4 +1,4 @@
-// Triggering a new build for Firebase....
+// Triggering a new build for Firebase
 
 "use client";
 
