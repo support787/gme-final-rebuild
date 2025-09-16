@@ -1,3 +1,4 @@
+// Triggering a new build for Firebase
 "use client";
 
 import React from 'react';
