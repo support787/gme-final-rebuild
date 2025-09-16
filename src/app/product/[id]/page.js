@@ -1,3 +1,4 @@
+// for nothing
 import { Suspense } from 'react';
 import ProductDetailClient from './ProductDetailClient';
 
