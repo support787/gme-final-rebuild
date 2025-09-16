@@ -1,3 +1,5 @@
+// do nothing
+
 import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 
