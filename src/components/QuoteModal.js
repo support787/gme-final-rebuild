@@ -1,6 +1,10 @@
+// do nothing
 "use client";
 
 import { useState, useEffect } from 'react';
+// 1. Import Firestore functions
+import { collection, addDoc } from 'firebase/firestore';
+import { db } from '../lib/firebase'; // Adjust this path if your firebase.js is elsewhere
 
 export default function QuoteModal({ isOpen, onClose, productDescription }) {
   const [formData, setFormData] = useState({
@@ -12,7 +16,6 @@ export default function QuoteModal({ isOpen, onClose, productDescription }) {
   });
   const [status, setStatus] = useState(''); // '' | 'sending' | 'success' | 'error'
 
-  // Pre-fill the message when the modal opens and the productDescription is available
   useEffect(() => {
     if (productDescription) {
       setFormData(prev => ({
@@ -29,22 +32,36 @@ export default function QuoteModal({ isOpen, onClose, productDescription }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!formData.fullName || !formData.email) {
+      setStatus('error');
+      return;
+    }
     setStatus('sending');
 
     try {
-      const response = await fetch('/api/quote', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, productName: productDescription }),
+      // 2. Instead of fetch, we now add a document to the 'mail' collection
+      await addDoc(collection(db, 'mail'), {
+        to: ['your-email@gmail.com'], // <-- IMPORTANT: Put your email address here
+        message: {
+          subject: `Quote Request from ${formData.fullName} for ${productDescription}`,
+          html: `
+            <h2>New Quote Request</h2>
+            <p><strong>Product:</strong> ${productDescription}</p>
+            <hr>
+            <p><strong>Name:</strong> ${formData.fullName}</p>
+            <p><strong>Company:</strong> ${formData.company || 'Not provided'}</p>
+            <p><strong>Email:</strong> ${formData.email}</p>
+            <p><strong>Country:</strong> ${formData.country || 'Not provided'}</p>
+            <hr>
+            <h3>Message:</h3>
+            <p>${formData.message.replace(/\n/g, '<br>')}</p>
+          `,
+        },
       });
+      setStatus('success');
 
-      if (response.ok) {
-        setStatus('success');
-      } else {
-        setStatus('error');
-      }
     } catch (error) {
-      console.error('Form submission error:', error);
+      console.error('Error writing to mail collection:', error);
       setStatus('error');
     }
   };
@@ -74,7 +91,8 @@ export default function QuoteModal({ isOpen, onClose, productDescription }) {
           <>
             <h2 className="text-2xl font-bold text-gray-800 mb-6">Request a Quote</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* ... form inputs are the same ... */}
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">Full Name *</label>
                   <input type="text" name="fullName" id="fullName" required value={formData.fullName} onChange={handleChange} className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" />
@@ -113,7 +131,7 @@ export default function QuoteModal({ isOpen, onClose, productDescription }) {
                   className="bg-teal-600 text-white font-bold py-2 px-6 rounded-full hover:bg-teal-700 transition duration-300 disabled:bg-teal-400"
                   disabled={status === 'sending'}
                 >
-                  {status === 'sending' ? 'Sending...' : 'Send Email'}
+                  {status === 'sending' ? 'Sending...' : 'Send Request'}
                 </button>
               </div>
             </form>
