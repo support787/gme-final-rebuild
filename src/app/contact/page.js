@@ -1,7 +1,9 @@
-// use client
 "use client";
 
 import { useState } from 'react';
+// Import Firestore functions
+import { collection, addDoc } from 'firebase/firestore';
+import { db } from '../../lib/firebase'; // Adjust this path if needed
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -22,19 +24,27 @@ export default function ContactPage() {
     setStatus('sending');
 
     try {
-      const response = await fetch('/api/contact', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+      // This now writes a document to the 'mail' collection,
+      // which the Firebase Extension will see and process.
+      await addDoc(collection(db, 'mail'), {
+        to: ['support@grandmedicalequipment.com'], // Your email address
+        message: {
+          subject: `Contact Form from ${formData.name}: ${formData.subject}`,
+          html: `
+            <h2>New Contact Form Submission</h2>
+            <p><strong>Name:</strong> ${formData.name}</p>
+            <p><strong>Email:</strong> ${formData.email}</p>
+            <p><strong>Subject:</strong> ${formData.subject || 'Not provided'}</p>
+            <hr>
+            <h3>Message:</h3>
+            <p>${formData.message.replace(/\n/g, '<br>')}</p>
+          `,
+        },
       });
+      setStatus('success');
 
-      if (response.ok) {
-        setStatus('success');
-      } else {
-        setStatus('error');
-      }
     } catch (error) {
-      console.error('Form submission error:', error);
+      console.error('Error writing to mail collection:', error);
       setStatus('error');
     }
   };
