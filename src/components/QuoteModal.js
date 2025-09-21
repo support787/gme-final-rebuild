@@ -1,4 +1,3 @@
-// do nothing
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -39,9 +38,10 @@ export default function QuoteModal({ isOpen, onClose, productDescription }) {
     setStatus('sending');
 
     try {
-      // 2. Instead of fetch, we now add a document to the 'mail' collection
+      // Instead of fetch, we now add a document to the 'mail' collection
       await addDoc(collection(db, 'mail'), {
-        to: ['your-email@gmail.com'], // <-- IMPORTANT: Put your email address here
+        // CORRECTED: Replace the placeholder with your actual email address.
+        to: ['support@grandmedicalequipment.com'], 
         message: {
           subject: `Quote Request from ${formData.fullName} for ${productDescription}`,
           html: `
@@ -91,7 +91,6 @@ export default function QuoteModal({ isOpen, onClose, productDescription }) {
           <>
             <h2 className="text-2xl font-bold text-gray-800 mb-6">Request a Quote</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* ... form inputs are the same ... */}
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">Full Name *</label>
@@ -141,3 +140,4 @@ export default function QuoteModal({ isOpen, onClose, productDescription }) {
     </div>
   );
 }
+
