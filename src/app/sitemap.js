@@ -1,5 +1,6 @@
 import { collection, getDocs } from 'firebase/firestore';
-import { db } from './lib/firebase'; // Make sure this path is correct
+// CORRECTED: The import path now correctly goes up one level from 'app' to 'src', then down into 'lib'.
+import { db } from '../lib/firebase';
 
 export default async function sitemap() {
   const baseUrl = 'https://www.grandmedicalequipment.com';
