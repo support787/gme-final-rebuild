@@ -181,10 +181,11 @@ export default function ProductDetailClient() {
                 </div>
               ) : (
                 // This is the normal view
+// removed  <p className="text-gray-700 text-lg my-6">This is a high-quality, pre-owned piece of equipment...</p>
                 <>
                   <p className="text-lg text-gray-500">{product.modality} {product.brand ? `/ ${product.brand}` : ''}</p>
                   <h1 className="text-4xl font-bold text-gray-900 mt-2 mb-4">{product.description}</h1>
-                  <p className="text-gray-700 text-lg my-6">This is a high-quality, pre-owned piece of equipment...</p>
+                 
                   <button 
                       onClick={() => setIsModalOpen(true)}
                       className="bg-teal-600 text-white font-bold py-4 px-8 rounded-full hover:bg-teal-700 transition duration-300 text-lg inline-block"
