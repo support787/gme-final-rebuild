@@ -1,5 +1,3 @@
-// Triggering a new build for Firebase
-
 "use client";
 
 import React from 'react';
@@ -42,36 +40,37 @@ export default function Home() {
 
   return (
     <>
-      <section className="relative text-white hero-section flex items-center justify-center">
+      <section className="relative text-white hero-section flex flex-col items-center justify-center">
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url('${heroBackgroundImage}')` }}>
-          {/* UPDATED: Overlay is now lighter (20% opacity instead of 50%) */}
-          <div className="absolute inset-0 bg-black/20"></div>
+          <div className="absolute inset-0 bg-black/30"></div>
         </div>
-        <div className="relative container mx-auto px-6 text-center pt-24">
-          {/* UPDATED: Added a text shadow for better readability */}
-          <h1 className="text-4xl md:text-6xl font-bold mb-4 uppercase tracking-wider [text-shadow:0_2px_4px_rgba(0,0,0,0.6)]">
-            Grand Medical Equipment<sup className="text-2xl md:text-4xl top-[-0.5em]">®</sup>
-          </h1>
-          <p className="text-lg md:text-xl mb-8 max-w-3xl mx-auto [text-shadow:0_1px_3px_rgba(0,0,0,0.5)]">Your Trusted Source of Pre-Owned Medical Equipment and Parts for 30+ Years</p>
-        </div>
-      </section>
+        
+        <div className="relative container mx-auto px-6 text-center flex flex-col items-center pt-24">
+          <div className="mb-12">
+            <h1 className="text-4xl md:text-6xl font-bold uppercase tracking-wider [text-shadow:1px_1px_2px_rgba(0,0,0,0.6)]">
+              Grand Medical Equipment<sup className="text-2xl md:text-4xl top-[-0.5em]">®</sup>
+            </h1>
+            <p className="text-lg md:text-xl mt-4 max-w-3xl mx-auto [text-shadow:1px_1px_2px_rgba(0,0,0,0.6)]">Your Trusted Source of Pre-Owned Medical Equipment and Parts for 30+ Years</p>
+          </div>
 
-      
-      <section className="bg-slate-50 py-20">
-        <div className="container mx-auto px-6">
-
-          <div className="bg-white rounded-lg shadow-lg p-8 md:p-12 mb-16 max-w-4xl mx-auto">
-            <h2 className="text-center text-3xl md:text-4xl font-bold text-gray-800 mb-2">
+          {/* UPDATED: Removed background, blur, and shadow for a transparent look */}
+          <div className="p-8 w-full max-w-4xl">
+            <h2 className="text-center text-3xl font-bold text-teal-400 mb-2 [text-shadow:1px_1px_2px_rgba(0,0,0,0.5)]">
               Quick Search For Parts
             </h2>
-            <p className="text-center text-gray-600 mb-8">
+            <p className="text-center text-gray-200 mb-8">
               Find the exact part you need from our extensive inventory.
             </p>
             <div className="flex justify-center">
               <PartsSearchBar />
             </div>
           </div>
+        </div>
+      </section>
 
+      
+      <section className="bg-slate-50 py-20">
+        <div className="container mx-auto px-6">
           <h3 className="text-center text-3xl font-bold text-gray-800 mb-12">Browse All Modalities</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8">
             {modalities.map(modality => (
@@ -106,4 +105,5 @@ export default function Home() {
     </>
   )
 }
+
 
