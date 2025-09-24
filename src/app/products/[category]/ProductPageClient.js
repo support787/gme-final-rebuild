@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../../lib/firebase';
 import { ProductCard } from '../../../components/ProductCard';
 import Link from 'next/link';
@@ -19,19 +19,17 @@ export default function ProductPageContent() {
 
   const [allProducts, setAllProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  
-  // --- STATE FOR FILTERS ---
-  // The state is now initialized directly from the URL search parameters.
-  // This ensures that on page load (including back navigation), the state is correct from the very first render.
+
+  // Initialize filter state directly from the URL for persistence
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   const [modalityFilter, setModalityFilter] = useState(searchParams.get('modality') || '');
   const [brandFilter, setBrandFilter] = useState(searchParams.get('brand') || '');
   const [locationFilter, setLocationFilter] = useState(searchParams.get('location') || '');
   
   const [pageNumber, setPageNumber] = useState(1);
-  
-  // --- DATA FETCHING ---
-  // This useEffect fetches the master list of products once.
+  const loggedSearchTerm = useRef(null); // Refined: Tracks the specific term that has been logged
+
+  // Fetch the master list of products once when the component mounts
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -53,7 +51,6 @@ export default function ProductPageContent() {
                 comments: data.COMMENT || data.COMMENTS
             }
         });
-
         setAllProducts(productsData);
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -67,8 +64,7 @@ export default function ProductPageContent() {
     }
   }, [category]);
 
-  // --- FILTERING LOGIC ---
-  // This useMemo filters the products whenever the state changes.
+  // Filter the products based on the current state of the filter inputs
   const filteredProducts = useMemo(() => {
     let currentProducts = allProducts;
     
@@ -91,25 +87,49 @@ export default function ProductPageContent() {
     return currentProducts;
   }, [allProducts, searchTerm, modalityFilter, brandFilter, locationFilter]);
 
-  // --- URL UPDATE HANDLER ---
-  // This function updates the URL whenever a filter changes.
-  const updateURLFilters = (newFilters) => {
-    const currentParams = new URLSearchParams();
-    // Build the new query string from the provided filters
-    if (newFilters.search) currentParams.set('search', newFilters.search);
-    if (newFilters.modality) currentParams.set('modality', newFilters.modality);
-    if (newFilters.brand) currentParams.set('brand', newFilters.brand);
-    if (newFilters.location) currentParams.set('location', newFilters.location);
-
-    // Use router.push to update the URL and create a new history entry
-    router.push(`${window.location.pathname}?${currentParams.toString()}`);
-  };
-
+  // Log the search query after the data has loaded and been filtered
+  useEffect(() => {
+    const currentSearch = searchParams.get('search');
+    // Log only if there's a new search term, data has loaded, and we are on the Parts page.
+    if (currentSearch && !isLoading && category === 'Parts' && loggedSearchTerm.current !== currentSearch) {
+      const found = filteredProducts.length > 0;
+      
+      const logSearch = async () => {
+        try {
+          await addDoc(collection(db, 'search_logs'), {
+            term: currentSearch,
+            foundResults: found,
+            resultCount: filteredProducts.length,
+            timestamp: serverTimestamp()
+          });
+          loggedSearchTerm.current = currentSearch; // Mark this specific term as logged
+          console.log(`Public search for "${currentSearch}" logged. Found: ${found}`);
+        } catch (error) {
+          console.error("Error logging search:", error);
+        }
+      };
+      logSearch();
+    }
+  }, [searchParams, isLoading, filteredProducts, category]);
 
   const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
   const paginatedProducts = filteredProducts.slice((pageNumber - 1) * ITEMS_PER_PAGE, pageNumber * ITEMS_PER_PAGE);
-
   const isSystemsPage = category === 'Systems';
+
+  // Handler to update state and URL when a filter input changes
+  const handleFilterChange = (setter, value, filterName) => {
+    setter(value);
+    setPageNumber(1);
+    
+    const currentParams = new URLSearchParams(window.location.search);
+    if (value) {
+      currentParams.set(filterName, value);
+    } else {
+      currentParams.delete(filterName);
+    }
+    // Use router.replace to update the URL without adding to browser history
+    router.replace(`${window.location.pathname}?${currentParams.toString()}`);
+  };
   
   return (
     <section className="py-20 bg-slate-50">
@@ -131,45 +151,21 @@ export default function ProductPageContent() {
             {!isSystemsPage && (
                 <div>
                     <label htmlFor="search" className="block text-sm font-medium text-gray-700">Part Number or Name</label>
-                    <input type="text" id="search" placeholder="e.g., Siemens Coil..." className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" value={searchTerm} 
-                      onChange={(e) => {
-                        setSearchTerm(e.target.value);
-                        setPageNumber(1);
-                        updateURLFilters({ search: e.target.value, modality: modalityFilter, brand: brandFilter, location: locationFilter });
-                      }} 
-                    />
+                    <input type="text" id="search" placeholder="e.g., Siemens Coil..." className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" value={searchTerm} onChange={(e) => handleFilterChange(setSearchTerm, e.target.value, 'search')} />
                 </div>
             )}
             <div>
                 <label className="block text-sm font-medium text-gray-700">Modality</label>
-                <input type="text" placeholder="Type to search..." className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" value={modalityFilter} 
-                  onChange={(e) => {
-                    setModalityFilter(e.target.value);
-                    setPageNumber(1);
-                    updateURLFilters({ search: searchTerm, modality: e.target.value, brand: brandFilter, location: locationFilter });
-                  }} 
-                />
+                <input type="text" placeholder="Type to search..." className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" value={modalityFilter} onChange={(e) => handleFilterChange(setModalityFilter, e.target.value, 'modality')} />
             </div>
             <div>
                 <label className="block text-sm font-medium text-gray-700">Manufacturer</label>
-                <input type="text" placeholder="Type to search..." className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" value={brandFilter} 
-                  onChange={(e) => {
-                    setBrandFilter(e.target.value);
-                    setPageNumber(1);
-                    updateURLFilters({ search: searchTerm, modality: modalityFilter, brand: e.target.value, location: locationFilter });
-                  }}
-                />
+                <input type="text" placeholder="Type to search..." className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" value={brandFilter} onChange={(e) => handleFilterChange(setBrandFilter, e.target.value, 'brand')} />
             </div>
             {isAdmin && !isSystemsPage && (
                 <div>
                     <label htmlFor="location" className="block text-sm font-medium text-gray-700">Location</label>
-                    <input type="text" placeholder="Type to search..." className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" value={locationFilter} 
-                      onChange={(e) => {
-                        setLocationFilter(e.target.value);
-                        setPageNumber(1);
-                        updateURLFilters({ search: searchTerm, modality: modalityFilter, brand: brandFilter, location: e.target.value });
-                      }}
-                    />
+                    <input type="text" placeholder="Type to search..." className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" value={locationFilter} onChange={(e) => handleFilterChange(setLocationFilter, e.target.value, 'location')} />
                 </div>
             )}
         </div>
