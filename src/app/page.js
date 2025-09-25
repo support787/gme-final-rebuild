@@ -58,16 +58,18 @@ export default function Home() {
             <h2 className="text-center text-3xl font-bold text-teal-400 mb-2 [text-shadow:1px_1px_2px_rgba(0,0,0,0.5)]">
               Quick Search For Parts
             </h2>
-            <p className="text-center text-gray-200 mb-8">
-              Find the exact part you need from our extensive inventory.
-            </p>
+            
             <div className="flex justify-center">
               <PartsSearchBar />
             </div>
           </div>
         </div>
       </section>
-
+/*
+<p className="text-center text-gray-200 mb-8">
+              Find the exact part you need from our extensive inventory.
+            </p> 
+*/
       
       <section className="bg-slate-50 py-20">
         <div className="container mx-auto px-6">

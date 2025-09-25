@@ -27,9 +27,8 @@ export default function ProductPageContent() {
   const [locationFilter, setLocationFilter] = useState(searchParams.get('location') || '');
   
   const [pageNumber, setPageNumber] = useState(1);
-  const loggedSearchTerm = useRef(null); // Refined: Tracks the specific term that has been logged
+  const loggedSearchTerm = useRef(null);
 
-  // Fetch the master list of products once when the component mounts
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -64,7 +63,6 @@ export default function ProductPageContent() {
     }
   }, [category]);
 
-  // Filter the products based on the current state of the filter inputs
   const filteredProducts = useMemo(() => {
     let currentProducts = allProducts;
     
@@ -87,10 +85,9 @@ export default function ProductPageContent() {
     return currentProducts;
   }, [allProducts, searchTerm, modalityFilter, brandFilter, locationFilter]);
 
-  // Log the search query after the data has loaded and been filtered
+  // This useEffect logs the search query. It's triggered when the URL changes.
   useEffect(() => {
     const currentSearch = searchParams.get('search');
-    // Log only if there's a new search term, data has loaded, and we are on the Parts page.
     if (currentSearch && !isLoading && category === 'Parts' && loggedSearchTerm.current !== currentSearch) {
       const found = filteredProducts.length > 0;
       
@@ -102,7 +99,7 @@ export default function ProductPageContent() {
             resultCount: filteredProducts.length,
             timestamp: serverTimestamp()
           });
-          loggedSearchTerm.current = currentSearch; // Mark this specific term as logged
+          loggedSearchTerm.current = currentSearch; 
           console.log(`Public search for "${currentSearch}" logged. Found: ${found}`);
         } catch (error) {
           console.error("Error logging search:", error);
@@ -112,24 +109,21 @@ export default function ProductPageContent() {
     }
   }, [searchParams, isLoading, filteredProducts, category]);
 
+  // --- NEW --- This function is now the single source for updating the URL and triggering a search log.
+  const handleSearchAction = () => {
+    const currentParams = new URLSearchParams(window.location.search);
+    if (searchTerm) {
+      currentParams.set('search', searchTerm);
+    } else {
+      currentParams.delete('search');
+    }
+    // We use router.push to ensure the change is registered in browser history correctly
+    router.push(`${window.location.pathname}?${currentParams.toString()}`);
+  };
+
   const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
   const paginatedProducts = filteredProducts.slice((pageNumber - 1) * ITEMS_PER_PAGE, pageNumber * ITEMS_PER_PAGE);
   const isSystemsPage = category === 'Systems';
-
-  // Handler to update state and URL when a filter input changes
-  const handleFilterChange = (setter, value, filterName) => {
-    setter(value);
-    setPageNumber(1);
-    
-    const currentParams = new URLSearchParams(window.location.search);
-    if (value) {
-      currentParams.set(filterName, value);
-    } else {
-      currentParams.delete(filterName);
-    }
-    // Use router.replace to update the URL without adding to browser history
-    router.replace(`${window.location.pathname}?${currentParams.toString()}`);
-  };
   
   return (
     <section className="py-20 bg-slate-50">
@@ -151,21 +145,31 @@ export default function ProductPageContent() {
             {!isSystemsPage && (
                 <div>
                     <label htmlFor="search" className="block text-sm font-medium text-gray-700">Part Number or Name</label>
-                    <input type="text" id="search" placeholder="e.g., Siemens Coil..." className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" value={searchTerm} onChange={(e) => handleFilterChange(setSearchTerm, e.target.value, 'search')} />
+                    <input 
+                      type="text" 
+                      id="search" 
+                      placeholder="e.g., Siemens Coil..." 
+                      className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" 
+                      value={searchTerm} 
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      // UPDATED: These handlers trigger the URL update and logging
+                      onBlur={handleSearchAction}
+                      onKeyDown={(e) => { if (e.key === 'Enter') handleSearchAction(); }}
+                    />
                 </div>
             )}
             <div>
                 <label className="block text-sm font-medium text-gray-700">Modality</label>
-                <input type="text" placeholder="Type to search..." className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" value={modalityFilter} onChange={(e) => handleFilterChange(setModalityFilter, e.target.value, 'modality')} />
+                <input type="text" placeholder="Type to search..." className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" value={modalityFilter} onChange={(e) => setModalityFilter(e.target.value)} />
             </div>
             <div>
                 <label className="block text-sm font-medium text-gray-700">Manufacturer</label>
-                <input type="text" placeholder="Type to search..." className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" value={brandFilter} onChange={(e) => handleFilterChange(setBrandFilter, e.target.value, 'brand')} />
+                <input type="text" placeholder="Type to search..." className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" value={brandFilter} onChange={(e) => setBrandFilter(e.target.value)} />
             </div>
             {isAdmin && !isSystemsPage && (
                 <div>
                     <label htmlFor="location" className="block text-sm font-medium text-gray-700">Location</label>
-                    <input type="text" placeholder="Type to search..." className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" value={locationFilter} onChange={(e) => handleFilterChange(setLocationFilter, e.target.value, 'location')} />
+                    <input type="text" placeholder="Type to search..." className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" value={locationFilter} onChange={(e) => setLocationFilter(e.target.value)} />
                 </div>
             )}
         </div>
