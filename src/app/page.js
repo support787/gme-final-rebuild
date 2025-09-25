@@ -65,12 +65,7 @@ export default function Home() {
           </div>
         </div>
       </section>
-/*
-<p className="text-center text-gray-200 mb-8">
-              Find the exact part you need from our extensive inventory.
-            </p> 
-*/
-      
+  
       <section className="bg-slate-50 py-20">
         <div className="container mx-auto px-6">
           <h3 className="text-center text-3xl font-bold text-gray-800 mb-12">Browse All Modalities</h3>
