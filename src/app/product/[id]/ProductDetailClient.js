@@ -7,7 +7,6 @@ import { db } from '../../../lib/firebase';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth } from '../../../lib/AuthContext';
-// 1. Import the new QuoteModal component
 import QuoteModal from '../../../components/QuoteModal';
 
 export default function ProductDetailClient() {
@@ -23,7 +22,6 @@ export default function ProductDetailClient() {
   const [isEditing, setIsEditing] = useState(false);
   const [editedProduct, setEditedProduct] = useState(null);
 
-  // 2. Add state to control the visibility of the quote modal
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
@@ -135,7 +133,6 @@ export default function ProductDetailClient() {
   const displayComments = product.comments && !product.comments.startsWith('http') ? product.comments : 'No comments.';
 
   return (
-    // We wrap everything in a React fragment <> to render the modal alongside the page
     <>
       <div className="bg-white py-20">
         <div className="container mx-auto px-6">
@@ -172,7 +169,6 @@ export default function ProductDetailClient() {
             )}
             <div className={product.image ? "md:w-1/2" : "w-full"}>
               {isEditing ? (
-                // This is the form when you are in "edit mode"
                 <div className="space-y-4">
                   <div><label className="font-bold">Modality:</label><input type="text" name="modality" value={editedProduct.modality || ''} onChange={handleInputChange} className="w-full p-2 border rounded" /></div>
                   <div><label className="font-bold">{product.type === 'part' ? 'Brand' : 'Manufacturer'}:</label><input type="text" name="brand" value={editedProduct.brand || ''} onChange={handleInputChange} className="w-full p-2 border rounded" /></div>
@@ -180,12 +176,11 @@ export default function ProductDetailClient() {
                   <div><label className="font-bold">Image URL(s):</label><textarea name="image" value={editedProduct.image || ''} onChange={handleInputChange} className="w-full p-2 border rounded" rows="3" placeholder="Separate multiple URLs with a semicolon (;)"></textarea></div>
                 </div>
               ) : (
-                // This is the normal view
-// removed  <p className="text-gray-700 text-lg my-6">This is a high-quality, pre-owned piece of equipment...</p>
                 <>
                   <p className="text-lg text-gray-500">{product.modality} {product.brand ? `/ ${product.brand}` : ''}</p>
-                  <h1 className="text-4xl font-bold text-gray-900 mt-2 mb-4">{product.description}</h1>
-                 
+                  {/* UPDATED: Added the 'whitespace-pre-wrap' class to preserve formatting */}
+                  <h1 className="text-4xl font-bold text-gray-900 mt-2 mb-4 whitespace-pre-wrap">{product.description}</h1>
+                  <p className="text-gray-700 text-lg my-6">This is a high-quality, pre-owned piece of equipment...</p>
                   <button 
                       onClick={() => setIsModalOpen(true)}
                       className="bg-teal-600 text-white font-bold py-4 px-8 rounded-full hover:bg-teal-700 transition duration-300 text-lg inline-block"
@@ -195,7 +190,6 @@ export default function ProductDetailClient() {
                 </>
               )}
               
-              {/* RESTORED: This is the admin section */}
               {isAdmin && (
                   <div className="mt-8 p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded-r-lg">
                       {isEditing ? (
@@ -226,7 +220,6 @@ export default function ProductDetailClient() {
           </div>
         </div>
       </div>
-      {/* This renders the modal */}
       <QuoteModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
@@ -235,4 +228,5 @@ export default function ProductDetailClient() {
     </>
   );
 }
+
 
