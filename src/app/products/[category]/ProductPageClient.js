@@ -20,10 +20,10 @@ export default function ProductPageContent() {
   const [allProducts, setAllProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Initialize filter state directly from the URL for persistence
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   const [modalityFilter, setModalityFilter] = useState(searchParams.get('modality') || '');
   const [brandFilter, setBrandFilter] = useState(searchParams.get('brand') || '');
-  // CORRECTED: The typo 'search_params' has been fixed to 'searchParams'.
   const [locationFilter, setLocationFilter] = useState(searchParams.get('location') || '');
   
   const [pageNumber, setPageNumber] = useState(1);
@@ -64,14 +64,31 @@ export default function ProductPageContent() {
     }
   }, [category]);
 
+  // RESTORED: This useEffect syncs the filters TO the URL
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      const currentParams = new URLSearchParams(window.location.search);
+      
+      if (searchTerm) currentParams.set('search', searchTerm); else currentParams.delete('search');
+      if (modalityFilter) currentParams.set('modality', modalityFilter); else currentParams.delete('modality');
+      if (brandFilter) currentParams.set('brand', brandFilter); else currentParams.delete('brand');
+      if (locationFilter) currentParams.set('location', locationFilter); else currentParams.delete('location');
+
+      router.replace(`${window.location.pathname}?${currentParams.toString()}`);
+    }, 300); // 300ms delay to prevent lag while typing
+
+    return () => clearTimeout(handler);
+  }, [searchTerm, modalityFilter, brandFilter, locationFilter, router]);
+
   const filteredProducts = useMemo(() => {
     let currentProducts = allProducts;
     
+    // RESTORED: Search logic is now insensitive to spaces
     if (searchTerm.trim()) {
-        const lowercasedFilter = searchTerm.trim().toLowerCase();
+        const lowercasedFilter = searchTerm.trim().toLowerCase().replace(/\s/g, ''); // Remove all spaces
         currentProducts = currentProducts.filter(p => {
-            const descriptionMatch = String(p.description || '').toLowerCase().includes(lowercasedFilter);
-            const partNumberMatch = String(p.partNumber || '').toLowerCase().includes(lowercasedFilter);
+            const descriptionMatch = String(p.description || '').toLowerCase().replace(/\s/g, '').includes(lowercasedFilter);
+            const partNumberMatch = String(p.partNumber || '').toLowerCase().replace(/\s/g, '').includes(lowercasedFilter);
             return descriptionMatch || partNumberMatch;
         });
     }
@@ -178,6 +195,5 @@ export default function ProductPageContent() {
     </section>
   );
 }
-
 
 
