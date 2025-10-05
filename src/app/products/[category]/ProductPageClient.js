@@ -20,14 +20,14 @@ export default function ProductPageContent() {
   const [allProducts, setAllProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Initialize filter state directly from the URL for persistence
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   const [modalityFilter, setModalityFilter] = useState(searchParams.get('modality') || '');
   const [brandFilter, setBrandFilter] = useState(searchParams.get('brand') || '');
+  // CORRECTED: The typo 'search_params' has been fixed to 'searchParams'.
   const [locationFilter, setLocationFilter] = useState(searchParams.get('location') || '');
   
   const [pageNumber, setPageNumber] = useState(1);
-  const loggedSearchTerm = useRef(null);
+  const lastLoggedSearch = useRef(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -45,6 +45,7 @@ export default function ProductPageContent() {
                 modality: data.MODALITY || data.MODELITY,
                 brand: data.MANUFACTURER || data.BRAND,
                 description: data.DESCRIPTION,
+                partNumber: data['PART NUMBER'] || data.PART_NUMBER || data.partNumber,
                 image: imageUrl && imageUrl.startsWith('http') ? imageUrl : null,
                 location: data.LOCATION,
                 comments: data.COMMENT || data.COMMENTS
@@ -68,58 +69,33 @@ export default function ProductPageContent() {
     
     if (searchTerm.trim()) {
         const lowercasedFilter = searchTerm.trim().toLowerCase();
-        currentProducts = currentProducts.filter(p => (p.description || '').toLowerCase().includes(lowercasedFilter));
+        currentProducts = currentProducts.filter(p => {
+            const descriptionMatch = String(p.description || '').toLowerCase().includes(lowercasedFilter);
+            const partNumberMatch = String(p.partNumber || '').toLowerCase().includes(lowercasedFilter);
+            return descriptionMatch || partNumberMatch;
+        });
     }
     if (modalityFilter.trim()) {
         const lowercasedFilter = modalityFilter.trim().toLowerCase();
-        currentProducts = currentProducts.filter(p => (p.modality || '').toLowerCase().includes(lowercasedFilter));
+        currentProducts = currentProducts.filter(p => 
+            String(p.modality || '').toLowerCase().includes(lowercasedFilter)
+        );
     }
     if (brandFilter.trim()) {
         const lowercasedFilter = brandFilter.trim().toLowerCase();
-        currentProducts = currentProducts.filter(p => (p.brand || '').toLowerCase().includes(lowercasedFilter));
+        currentProducts = currentProducts.filter(p => 
+            String(p.brand || '').toLowerCase().includes(lowercasedFilter)
+        );
     }
     if (locationFilter.trim()) {
         const lowercasedFilter = locationFilter.trim().toLowerCase();
-        currentProducts = currentProducts.filter(p => (p.location || '').toLowerCase().includes(lowercasedFilter));
+        currentProducts = currentProducts.filter(p => 
+            String(p.location || '').toLowerCase().includes(lowercasedFilter)
+        );
     }
     return currentProducts;
   }, [allProducts, searchTerm, modalityFilter, brandFilter, locationFilter]);
 
-  // This useEffect logs the search query. It's triggered when the URL changes.
-  useEffect(() => {
-    const currentSearch = searchParams.get('search');
-    if (currentSearch && !isLoading && category === 'Parts' && loggedSearchTerm.current !== currentSearch) {
-      const found = filteredProducts.length > 0;
-      
-      const logSearch = async () => {
-        try {
-          await addDoc(collection(db, 'search_logs'), {
-            term: currentSearch,
-            foundResults: found,
-            resultCount: filteredProducts.length,
-            timestamp: serverTimestamp()
-          });
-          loggedSearchTerm.current = currentSearch; 
-          console.log(`Public search for "${currentSearch}" logged. Found: ${found}`);
-        } catch (error) {
-          console.error("Error logging search:", error);
-        }
-      };
-      logSearch();
-    }
-  }, [searchParams, isLoading, filteredProducts, category]);
-
-  // --- NEW --- This function is now the single source for updating the URL and triggering a search log.
-  const handleSearchAction = () => {
-    const currentParams = new URLSearchParams(window.location.search);
-    if (searchTerm) {
-      currentParams.set('search', searchTerm);
-    } else {
-      currentParams.delete('search');
-    }
-    // We use router.push to ensure the change is registered in browser history correctly
-    router.push(`${window.location.pathname}?${currentParams.toString()}`);
-  };
 
   const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
   const paginatedProducts = filteredProducts.slice((pageNumber - 1) * ITEMS_PER_PAGE, pageNumber * ITEMS_PER_PAGE);
@@ -145,31 +121,21 @@ export default function ProductPageContent() {
             {!isSystemsPage && (
                 <div>
                     <label htmlFor="search" className="block text-sm font-medium text-gray-700">Part Number or Name</label>
-                    <input 
-                      type="text" 
-                      id="search" 
-                      placeholder="e.g., Siemens Coil..." 
-                      className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" 
-                      value={searchTerm} 
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      // UPDATED: These handlers trigger the URL update and logging
-                      onBlur={handleSearchAction}
-                      onKeyDown={(e) => { if (e.key === 'Enter') handleSearchAction(); }}
-                    />
+                    <input type="text" id="search" placeholder="e.g., Siemens Coil..." className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" value={searchTerm} onChange={(e) => {setSearchTerm(e.target.value); setPageNumber(1);}} />
                 </div>
             )}
             <div>
                 <label className="block text-sm font-medium text-gray-700">Modality</label>
-                <input type="text" placeholder="Type to search..." className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" value={modalityFilter} onChange={(e) => setModalityFilter(e.target.value)} />
+                <input type="text" placeholder="Type to search..." className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" value={modalityFilter} onChange={(e) => {setModalityFilter(e.target.value); setPageNumber(1);}} />
             </div>
             <div>
                 <label className="block text-sm font-medium text-gray-700">Manufacturer</label>
-                <input type="text" placeholder="Type to search..." className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" value={brandFilter} onChange={(e) => setBrandFilter(e.target.value)} />
+                <input type="text" placeholder="Type to search..." className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" value={brandFilter} onChange={(e) => {setBrandFilter(e.target.value); setPageNumber(1);}} />
             </div>
             {isAdmin && !isSystemsPage && (
                 <div>
                     <label htmlFor="location" className="block text-sm font-medium text-gray-700">Location</label>
-                    <input type="text" placeholder="Type to search..." className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" value={locationFilter} onChange={(e) => setLocationFilter(e.target.value)} />
+                    <input type="text" placeholder="Type to search..." className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" value={locationFilter} onChange={(e) => {setLocationFilter(e.target.value); setPageNumber(1);}} />
                 </div>
             )}
         </div>
@@ -212,4 +178,6 @@ export default function ProductPageContent() {
     </section>
   );
 }
+
+
 

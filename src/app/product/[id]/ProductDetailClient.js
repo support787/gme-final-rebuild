@@ -53,6 +53,7 @@ export default function ProductDetailClient() {
             image: data[imageField] && data[imageField].startsWith('http') ? data[imageField] : null,
             comments: data[commentsField],
             location: data.LOCATION,
+            partNumber: data['PART NUMBER'] || data.PART_NUMBER || data.partNumber, 
             _originalFields: {
               modality: modalityField,
               brand: brandField,
@@ -95,6 +96,8 @@ export default function ProductDetailClient() {
 
     if (product.type === 'part') {
       dataToSave.LOCATION = editedProduct.location;
+      // Also save the part number if it's being edited
+      dataToSave['PART NUMBER'] = editedProduct.partNumber;
     }
 
     try {
@@ -172,18 +175,28 @@ export default function ProductDetailClient() {
                 <div className="space-y-4">
                   <div><label className="font-bold">Modality:</label><input type="text" name="modality" value={editedProduct.modality || ''} onChange={handleInputChange} className="w-full p-2 border rounded" /></div>
                   <div><label className="font-bold">{product.type === 'part' ? 'Brand' : 'Manufacturer'}:</label><input type="text" name="brand" value={editedProduct.brand || ''} onChange={handleInputChange} className="w-full p-2 border rounded" /></div>
+                  {/* Part Number is now an editable field */}
+                  <div><label className="font-bold">Part Number:</label><input type="text" name="partNumber" value={editedProduct.partNumber || ''} onChange={handleInputChange} className="w-full p-2 border rounded" /></div>
                   <div><label className="font-bold">Description:</label><textarea name="description" value={editedProduct.description || ''} onChange={handleInputChange} className="w-full p-2 border rounded" rows="4"></textarea></div>
                   <div><label className="font-bold">Image URL(s):</label><textarea name="image" value={editedProduct.image || ''} onChange={handleInputChange} className="w-full p-2 border rounded" rows="3" placeholder="Separate multiple URLs with a semicolon (;)"></textarea></div>
                 </div>
               ) : (
                 <>
                   <p className="text-lg text-gray-500">{product.modality} {product.brand ? `/ ${product.brand}` : ''}</p>
-                  {/* UPDATED: Added the 'whitespace-pre-wrap' class to preserve formatting */}
-                  <h1 className="text-4xl font-bold text-gray-900 mt-2 mb-4 whitespace-pre-wrap">{product.description}</h1>
-                  <p className="text-gray-700 text-lg my-6">This is a high-quality, pre-owned piece of equipment...</p>
+                  
+                  {/* 1. Part Number moved up and made bold */}
+                  {product.partNumber && (
+                    <p className="text-xl text-gray-800 font-bold mt-4 mb-2">Part Number: {product.partNumber}</p>
+                  )}
+
+                  {/* 2. Description font size is now text-xl */}
+                  <h1 className="text-xl font-bold text-gray-900 mb-6 whitespace-pre-wrap">{product.description}</h1>
+                  
+                  {/* 3. Generic "high-quality" text removed */}
+                  
                   <button 
                       onClick={() => setIsModalOpen(true)}
-                      className="bg-teal-600 text-white font-bold py-4 px-8 rounded-full hover:bg-teal-700 transition duration-300 text-lg inline-block"
+                      className="bg-teal-600 text-white font-bold py-4 px-8 rounded-full hover:bg-teal-700 transition duration-300 text-lg inline-block mt-6"
                   >
                       Request a Quote
                   </button>
@@ -223,7 +236,7 @@ export default function ProductDetailClient() {
       <QuoteModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
-        productDescription={product ? product.description : ''} 
+        productDescription={product ? `${product.description} (PN: ${product.partNumber || 'N/A'})` : ''} 
       />
     </>
   );
