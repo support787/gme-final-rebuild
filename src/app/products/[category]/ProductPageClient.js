@@ -20,8 +20,11 @@ export default function ProductPageContent() {
   const [allProducts, setAllProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Initialize filter state directly from the URL for persistence
+  // This state holds the "live" value as the user types
+  const [inputValue, setInputValue] = useState(searchParams.get('search') || '');
+  // This state holds the "committed" search term for filtering
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
+  
   const [modalityFilter, setModalityFilter] = useState(searchParams.get('modality') || '');
   const [brandFilter, setBrandFilter] = useState(searchParams.get('brand') || '');
   const [locationFilter, setLocationFilter] = useState(searchParams.get('location') || '');
@@ -64,28 +67,11 @@ export default function ProductPageContent() {
     }
   }, [category]);
 
-  // RESTORED: This useEffect syncs the filters TO the URL
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      const currentParams = new URLSearchParams(window.location.search);
-      
-      if (searchTerm) currentParams.set('search', searchTerm); else currentParams.delete('search');
-      if (modalityFilter) currentParams.set('modality', modalityFilter); else currentParams.delete('modality');
-      if (brandFilter) currentParams.set('brand', brandFilter); else currentParams.delete('brand');
-      if (locationFilter) currentParams.set('location', locationFilter); else currentParams.delete('location');
-
-      router.replace(`${window.location.pathname}?${currentParams.toString()}`);
-    }, 300); // 300ms delay to prevent lag while typing
-
-    return () => clearTimeout(handler);
-  }, [searchTerm, modalityFilter, brandFilter, locationFilter, router]);
-
   const filteredProducts = useMemo(() => {
     let currentProducts = allProducts;
     
-    // RESTORED: Search logic is now insensitive to spaces
     if (searchTerm.trim()) {
-        const lowercasedFilter = searchTerm.trim().toLowerCase().replace(/\s/g, ''); // Remove all spaces
+        const lowercasedFilter = searchTerm.trim().toLowerCase().replace(/\s/g, '');
         currentProducts = currentProducts.filter(p => {
             const descriptionMatch = String(p.description || '').toLowerCase().replace(/\s/g, '').includes(lowercasedFilter);
             const partNumberMatch = String(p.partNumber || '').toLowerCase().replace(/\s/g, '').includes(lowercasedFilter);
@@ -113,10 +99,49 @@ export default function ProductPageContent() {
     return currentProducts;
   }, [allProducts, searchTerm, modalityFilter, brandFilter, locationFilter]);
 
+  // RESTORED: This useEffect contains the logic for logging a search query.
+  // It is triggered whenever the main 'searchTerm' state is updated.
+  useEffect(() => {
+    // We only log if there is a new, non-empty search term on the Parts page.
+    if (searchTerm && !isLoading && category === 'Parts' && lastLoggedSearch.current !== searchTerm) {
+      const found = filteredProducts.length > 0;
+      
+      const logSearch = async () => {
+        try {
+          await addDoc(collection(db, 'search_logs'), {
+            term: searchTerm,
+            foundResults: found,
+            resultCount: filteredProducts.length,
+            timestamp: serverTimestamp()
+          });
+          lastLoggedSearch.current = searchTerm; // Remember the term we just logged
+          console.log(`Public search for "${searchTerm}" logged. Found: ${found}`);
+        } catch (error) {
+          console.error("Error logging search:", error);
+        }
+      };
+      logSearch();
+    }
+  }, [searchTerm, isLoading, filteredProducts, category]);
+
 
   const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
   const paginatedProducts = filteredProducts.slice((pageNumber - 1) * ITEMS_PER_PAGE, pageNumber * ITEMS_PER_PAGE);
   const isSystemsPage = category === 'Systems';
+
+  // This function commits the search, updates the URL, and triggers the logging effect.
+  const handleSearchCommit = () => {
+    setSearchTerm(inputValue); // Commit the live input value to the official search term
+    setPageNumber(1);
+
+    const currentParams = new URLSearchParams(window.location.search);
+    if (inputValue) {
+      currentParams.set('search', inputValue);
+    } else {
+      currentParams.delete('search');
+    }
+    router.replace(`${window.location.pathname}?${currentParams.toString()}`);
+  };
   
   return (
     <section className="py-20 bg-slate-50">
@@ -138,7 +163,16 @@ export default function ProductPageContent() {
             {!isSystemsPage && (
                 <div>
                     <label htmlFor="search" className="block text-sm font-medium text-gray-700">Part Number or Name</label>
-                    <input type="text" id="search" placeholder="e.g., Siemens Coil..." className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" value={searchTerm} onChange={(e) => {setSearchTerm(e.target.value); setPageNumber(1);}} />
+                    <input 
+                      type="text" 
+                      id="search" 
+                      placeholder="e.g., Siemens Coil..." 
+                      className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" 
+                      value={inputValue} 
+                      onChange={(e) => setInputValue(e.target.value)}
+                      onBlur={handleSearchCommit}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSearchCommit(); } }}
+                    />
                 </div>
             )}
             <div>
