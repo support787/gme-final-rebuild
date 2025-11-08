@@ -1,4 +1,3 @@
-// src/app/add/[type]/page.js
 "use client";
 
 import { useState } from 'react';
@@ -25,7 +24,7 @@ export default function AddProductPage() {
         try {
             await addDoc(collection(db, collectionName), formData);
             alert(`${type} added successfully!`);
-            router.push(`/products/${type}s`); // Redirect to the list page
+            router.push(`/products/${isSystem ? 'Systems' : 'Parts'}`); // Redirect to the list page
         } catch (error) {
             console.error("Error adding document: ", error);
             alert("Failed to add new item.");
@@ -35,6 +34,9 @@ export default function AddProductPage() {
     const partFields = [
         { name: 'MODELITY', label: 'Modality', type: 'text' },
         { name: 'BRAND', label: 'Brand', type: 'text' },
+        // --- ADDED THIS FIELD ---
+        { name: 'PART NUMBER', label: 'Part Number', type: 'text' },
+        // -------------------------
         { name: 'DESCRIPTION', label: 'Description', type: 'textarea' },
         { name: 'IMAGE', label: 'Image URL', type: 'text' },
         { name: 'LOCATION', label: 'Location', type: 'text' },
