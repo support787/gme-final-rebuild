@@ -31,12 +31,14 @@ export default function ProductDetailClient() {
       setIsLoading(true);
       const collectionsToTry = ['Systems', 'products'];
       let foundProduct = null;
+      let collectionNameForProduct = ''; // To store which collection it was found in
 
       for (const collectionName of collectionsToTry) {
         const docRef = doc(db, collectionName, productId);
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
+          collectionNameForProduct = collectionName; // Remember this
           const data = docSnap.data();
           
           const modalityField = 'MODALITY' in data ? 'MODALITY' : 'MODELITY';
@@ -86,6 +88,7 @@ export default function ProductDetailClient() {
     const collectionName = product.type === 'system' ? 'Systems' : 'products';
     const docRef = doc(db, collectionName, product.id);
     
+    // Start with fields common to both
     const dataToSave = {
       DESCRIPTION: editedProduct.description,
       [product._originalFields.modality]: editedProduct.modality,
@@ -94,15 +97,17 @@ export default function ProductDetailClient() {
       [product._originalFields.comments]: editedProduct.comments,
     };
 
+    // --- CORRECTED ---
+    // Add fields ONLY if it's a part
     if (product.type === 'part') {
       dataToSave.LOCATION = editedProduct.location;
-      // Also save the part number if it's being edited
+      // Use the correct field name 'PART NUMBER' (with a space) for saving
       dataToSave['PART NUMBER'] = editedProduct.partNumber;
     }
 
     try {
       await updateDoc(docRef, dataToSave);
-      setProduct(editedProduct);
+      setProduct(editedProduct); // Update the main product state
       setIsEditing(false);
       console.log('Changes saved successfully!');
     } catch (error) {
@@ -175,8 +180,13 @@ export default function ProductDetailClient() {
                 <div className="space-y-4">
                   <div><label className="font-bold">Modality:</label><input type="text" name="modality" value={editedProduct.modality || ''} onChange={handleInputChange} className="w-full p-2 border rounded" /></div>
                   <div><label className="font-bold">{product.type === 'part' ? 'Brand' : 'Manufacturer'}:</label><input type="text" name="brand" value={editedProduct.brand || ''} onChange={handleInputChange} className="w-full p-2 border rounded" /></div>
-                  {/* Part Number is now an editable field */}
-                  <div><label className="font-bold">Part Number:</label><input type="text" name="partNumber" value={editedProduct.partNumber || ''} onChange={handleInputChange} className="w-full p-2 border rounded" /></div>
+                  
+                  {/* --- CORRECTED --- 
+                      This field will now ONLY show if the type is 'part' */}
+                  {product.type === 'part' && (
+                    <div><label className="font-bold">Part Number:</label><input type="text" name="partNumber" value={editedProduct.partNumber || ''} onChange={handleInputChange} className="w-full p-2 border rounded" /></div>
+                  )}
+                  
                   <div><label className="font-bold">Description:</label><textarea name="description" value={editedProduct.description || ''} onChange={handleInputChange} className="w-full p-2 border rounded" rows="4"></textarea></div>
                   <div><label className="font-bold">Image URL(s):</label><textarea name="image" value={editedProduct.image || ''} onChange={handleInputChange} className="w-full p-2 border rounded" rows="3" placeholder="Separate multiple URLs with a semicolon (;)"></textarea></div>
                 </div>
@@ -184,15 +194,13 @@ export default function ProductDetailClient() {
                 <>
                   <p className="text-lg text-gray-500">{product.modality} {product.brand ? `/ ${product.brand}` : ''}</p>
                   
-                  {/* 1. Part Number moved up and made bold */}
-                  {product.partNumber && (
+                  {/* --- CORRECTED --- 
+                      This will now ONLY show if the type is 'part' */}
+                  {product.type === 'part' && product.partNumber && (
                     <p className="text-xl text-gray-800 font-bold mt-4 mb-2">Part Number: {product.partNumber}</p>
                   )}
 
-                  {/* 2. Description font size is now text-xl */}
                   <h1 className="text-xl font-bold text-gray-900 mb-6 whitespace-pre-wrap">{product.description}</h1>
-                  
-                  {/* 3. Generic "high-quality" text removed */}
                   
                   <button 
                       onClick={() => setIsModalOpen(true)}
@@ -207,6 +215,8 @@ export default function ProductDetailClient() {
                   <div className="mt-8 p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded-r-lg">
                       {isEditing ? (
                           <div className="space-y-4">
+                            {/* --- CORRECTED --- 
+                                This field will now ONLY show if the type is 'part' */}
                             {product.type === 'part' && <div><label className="font-bold">Location:</label><input type="text" name="location" value={editedProduct.location || ''} onChange={handleInputChange} className="w-full p-2 border rounded" /></div>}
                             <div><label className="font-bold">Comments:</label><textarea name="comments" value={editedProduct.comments || ''} onChange={handleInputChange} className="w-full p-2 border rounded" rows="3"></textarea></div>
                             <div className="flex space-x-4">
@@ -218,7 +228,9 @@ export default function ProductDetailClient() {
                           <div>
                               <h3 className="text-xl font-bold text-yellow-800 mb-2">Internal Admin Notes</h3>
                               <div className="text-yellow-700">
-                                  <p><strong className="font-semibold">Location:</strong> {product.location || 'N/A'}</p>
+                                  {/* --- CORRECTED ---
+                                      This will now ONLY show if the type is 'part' */}
+                                  {product.type === 'part' && <p><strong className="font-semibold">Location:</strong> {product.location || 'N/A'}</p>}
                                   <p><strong className="font-semibold">Comments:</strong> {displayComments}</p>
                               </div>
                               <div className="mt-4 flex space-x-4">
@@ -241,5 +253,4 @@ export default function ProductDetailClient() {
     </>
   );
 }
-
 
