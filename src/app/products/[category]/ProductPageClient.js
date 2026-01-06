@@ -20,18 +20,21 @@ export default function ProductPageContent() {
   const [allProducts, setAllProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // This state holds the "live" value as the user types
+  // --- NEW: Get Page Number from URL (Default to 1) ---
+  const pageParam = searchParams.get('page');
+  const pageNumber = pageParam ? parseInt(pageParam, 10) : 1;
+
+  // Search & Filter State
   const [inputValue, setInputValue] = useState(searchParams.get('search') || '');
-  // This state holds the "committed" search term for filtering
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   
   const [modalityFilter, setModalityFilter] = useState(searchParams.get('modality') || '');
   const [brandFilter, setBrandFilter] = useState(searchParams.get('brand') || '');
   const [locationFilter, setLocationFilter] = useState(searchParams.get('location') || '');
   
-  const [pageNumber, setPageNumber] = useState(1);
   const lastLoggedSearch = useRef(null);
 
+  // --- Fetch Data ---
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -67,6 +70,7 @@ export default function ProductPageContent() {
     }
   }, [category]);
 
+  // --- Filter Logic ---
   const filteredProducts = useMemo(() => {
     let currentProducts = allProducts;
     
@@ -99,10 +103,8 @@ export default function ProductPageContent() {
     return currentProducts;
   }, [allProducts, searchTerm, modalityFilter, brandFilter, locationFilter]);
 
-  // RESTORED: This useEffect contains the logic for logging a search query.
-  // It is triggered whenever the main 'searchTerm' state is updated.
+  // --- Search Logging ---
   useEffect(() => {
-    // We only log if there is a new, non-empty search term on the Parts page.
     if (searchTerm && !isLoading && category === 'Parts' && lastLoggedSearch.current !== searchTerm) {
       const found = filteredProducts.length > 0;
       
@@ -114,7 +116,7 @@ export default function ProductPageContent() {
             resultCount: filteredProducts.length,
             timestamp: serverTimestamp()
           });
-          lastLoggedSearch.current = searchTerm; // Remember the term we just logged
+          lastLoggedSearch.current = searchTerm;
           console.log(`Public search for "${searchTerm}" logged. Found: ${found}`);
         } catch (error) {
           console.error("Error logging search:", error);
@@ -124,17 +126,23 @@ export default function ProductPageContent() {
     }
   }, [searchTerm, isLoading, filteredProducts, category]);
 
-
+  // --- Pagination Logic ---
   const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
   const paginatedProducts = filteredProducts.slice((pageNumber - 1) * ITEMS_PER_PAGE, pageNumber * ITEMS_PER_PAGE);
   const isSystemsPage = category === 'Systems';
 
-  // This function commits the search, updates the URL, and triggers the logging effect.
-  const handleSearchCommit = () => {
-    setSearchTerm(inputValue); // Commit the live input value to the official search term
-    setPageNumber(1);
+  // Helper to generate URL for a specific page
+  const createPageURL = (pageNumber) => {
+    const params = new URLSearchParams(searchParams);
+    params.set('page', pageNumber.toString());
+    return `${window.location.pathname}?${params.toString()}`;
+  };
 
+  const handleSearchCommit = () => {
+    setSearchTerm(inputValue);
+    // Reset to page 1 on new search
     const currentParams = new URLSearchParams(window.location.search);
+    currentParams.set('page', '1'); 
     if (inputValue) {
       currentParams.set('search', inputValue);
     } else {
@@ -143,6 +151,14 @@ export default function ProductPageContent() {
     router.replace(`${window.location.pathname}?${currentParams.toString()}`);
   };
   
+  // Reset page to 1 if filters change
+  const handleFilterChange = (setter, value) => {
+      setter(value);
+      const currentParams = new URLSearchParams(window.location.search);
+      currentParams.set('page', '1');
+      router.replace(`${window.location.pathname}?${currentParams.toString()}`);
+  }
+
   return (
     <section className="py-20 bg-slate-50">
       <div className="container mx-auto px-6">
@@ -177,16 +193,34 @@ export default function ProductPageContent() {
             )}
             <div>
                 <label className="block text-sm font-medium text-gray-700">Modality</label>
-                <input type="text" placeholder="Type to search..." className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" value={modalityFilter} onChange={(e) => {setModalityFilter(e.target.value); setPageNumber(1);}} />
+                <input 
+                  type="text" 
+                  placeholder="Type to search..." 
+                  className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" 
+                  value={modalityFilter} 
+                  onChange={(e) => handleFilterChange(setModalityFilter, e.target.value)} 
+                />
             </div>
             <div>
                 <label className="block text-sm font-medium text-gray-700">Manufacturer</label>
-                <input type="text" placeholder="Type to search..." className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" value={brandFilter} onChange={(e) => {setBrandFilter(e.target.value); setPageNumber(1);}} />
+                <input 
+                  type="text" 
+                  placeholder="Type to search..." 
+                  className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" 
+                  value={brandFilter} 
+                  onChange={(e) => handleFilterChange(setBrandFilter, e.target.value)} 
+                />
             </div>
             {isAdmin && !isSystemsPage && (
                 <div>
                     <label htmlFor="location" className="block text-sm font-medium text-gray-700">Location</label>
-                    <input type="text" placeholder="Type to search..." className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" value={locationFilter} onChange={(e) => {setLocationFilter(e.target.value); setPageNumber(1);}} />
+                    <input 
+                      type="text" 
+                      placeholder="Type to search..." 
+                      className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" 
+                      value={locationFilter} 
+                      onChange={(e) => handleFilterChange(setLocationFilter, e.target.value)} 
+                    />
                 </div>
             )}
         </div>
@@ -201,25 +235,26 @@ export default function ProductPageContent() {
               ))}
             </div>
             
+            {/* --- NEW: URL-Based Pagination Controls --- */}
             {totalPages > 1 && (
               <div className="mt-12 flex justify-center items-center space-x-4">
-                <button
-                  onClick={() => setPageNumber(Math.max(1, pageNumber - 1))}
-                  disabled={pageNumber === 1}
-                  className="px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                <Link
+                  href={createPageURL(Math.max(1, pageNumber - 1))}
+                  className={`px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 ${pageNumber === 1 ? 'opacity-50 pointer-events-none' : ''}`}
                 >
                   ← Previous
-                </button>
+                </Link>
+                
                 <span className="text-sm text-gray-700">
                   Page {pageNumber} of {totalPages}
                 </span>
-                <button
-                  onClick={() => setPageNumber(Math.min(totalPages, pageNumber + 1))}
-                  disabled={pageNumber === totalPages}
-                  className="px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+
+                <Link
+                  href={createPageURL(Math.min(totalPages, pageNumber + 1))}
+                  className={`px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 ${pageNumber === totalPages ? 'opacity-50 pointer-events-none' : ''}`}
                 >
                   Next →
-                </button>
+                </Link>
               </div>
             )}
           </>
@@ -229,5 +264,4 @@ export default function ProductPageContent() {
     </section>
   );
 }
-
 
