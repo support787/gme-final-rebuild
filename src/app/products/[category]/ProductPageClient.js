@@ -20,11 +20,10 @@ export default function ProductPageContent() {
   const [allProducts, setAllProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // --- NEW: Get Page Number from URL (Default to 1) ---
+  // --- URL State Management ---
   const pageParam = searchParams.get('page');
   const pageNumber = pageParam ? parseInt(pageParam, 10) : 1;
 
-  // Search & Filter State
   const [inputValue, setInputValue] = useState(searchParams.get('search') || '');
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   
@@ -53,7 +52,8 @@ export default function ProductPageContent() {
                 description: data.DESCRIPTION,
                 partNumber: data['PART NUMBER'] || data.PART_NUMBER || data.partNumber,
                 image: imageUrl && imageUrl.startsWith('http') ? imageUrl : null,
-                location: data.LOCATION,
+                // SAFETY CHECK: Try all possible capitalizations for Location
+                location: data.LOCATION || data.Location || data.location || '', 
                 comments: data.COMMENT || data.COMMENTS
             }
         });
@@ -70,34 +70,38 @@ export default function ProductPageContent() {
     }
   }, [category]);
 
-  // --- Filter Logic ---
+  // --- ROBUST FILTER LOGIC ---
   const filteredProducts = useMemo(() => {
     let currentProducts = allProducts;
     
+    // Helper: Strip EVERYTHING that isn't a letter or number
+    // "PALLET   ON--SHELF" becomes "palletonshelf"
+    const cleanString = (str) => String(str || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
     if (searchTerm.trim()) {
-        const lowercasedFilter = searchTerm.trim().toLowerCase().replace(/\s/g, '');
+        const cleanFilter = cleanString(searchTerm);
         currentProducts = currentProducts.filter(p => {
-            const descriptionMatch = String(p.description || '').toLowerCase().replace(/\s/g, '').includes(lowercasedFilter);
-            const partNumberMatch = String(p.partNumber || '').toLowerCase().replace(/\s/g, '').includes(lowercasedFilter);
+            const descriptionMatch = cleanString(p.description).includes(cleanFilter);
+            const partNumberMatch = cleanString(p.partNumber).includes(cleanFilter);
             return descriptionMatch || partNumberMatch;
         });
     }
     if (modalityFilter.trim()) {
-        const lowercasedFilter = modalityFilter.trim().toLowerCase();
+        const cleanFilter = cleanString(modalityFilter);
         currentProducts = currentProducts.filter(p => 
-            String(p.modality || '').toLowerCase().includes(lowercasedFilter)
+            cleanString(p.modality).includes(cleanFilter)
         );
     }
     if (brandFilter.trim()) {
-        const lowercasedFilter = brandFilter.trim().toLowerCase();
+        const cleanFilter = cleanString(brandFilter);
         currentProducts = currentProducts.filter(p => 
-            String(p.brand || '').toLowerCase().includes(lowercasedFilter)
+            cleanString(p.brand).includes(cleanFilter)
         );
     }
     if (locationFilter.trim()) {
-        const lowercasedFilter = locationFilter.trim().toLowerCase();
+        const cleanFilter = cleanString(locationFilter);
         currentProducts = currentProducts.filter(p => 
-            String(p.location || '').toLowerCase().includes(lowercasedFilter)
+            cleanString(p.location).includes(cleanFilter)
         );
     }
     return currentProducts;
@@ -117,7 +121,6 @@ export default function ProductPageContent() {
             timestamp: serverTimestamp()
           });
           lastLoggedSearch.current = searchTerm;
-          console.log(`Public search for "${searchTerm}" logged. Found: ${found}`);
         } catch (error) {
           console.error("Error logging search:", error);
         }
@@ -126,12 +129,11 @@ export default function ProductPageContent() {
     }
   }, [searchTerm, isLoading, filteredProducts, category]);
 
-  // --- Pagination Logic ---
+  // --- Pagination & URL Helpers ---
   const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
   const paginatedProducts = filteredProducts.slice((pageNumber - 1) * ITEMS_PER_PAGE, pageNumber * ITEMS_PER_PAGE);
   const isSystemsPage = category === 'Systems';
 
-  // Helper to generate URL for a specific page
   const createPageURL = (pageNumber) => {
     const params = new URLSearchParams(searchParams);
     params.set('page', pageNumber.toString());
@@ -140,7 +142,6 @@ export default function ProductPageContent() {
 
   const handleSearchCommit = () => {
     setSearchTerm(inputValue);
-    // Reset to page 1 on new search
     const currentParams = new URLSearchParams(window.location.search);
     currentParams.set('page', '1'); 
     if (inputValue) {
@@ -151,11 +152,13 @@ export default function ProductPageContent() {
     router.replace(`${window.location.pathname}?${currentParams.toString()}`);
   };
   
-  // Reset page to 1 if filters change
   const handleFilterChange = (setter, value) => {
       setter(value);
       const currentParams = new URLSearchParams(window.location.search);
       currentParams.set('page', '1');
+      
+      // Update URL params for filters so they stick on refresh (Optional but good)
+      // For now, we just reset page to 1
       router.replace(`${window.location.pathname}?${currentParams.toString()}`);
   }
 
@@ -235,7 +238,6 @@ export default function ProductPageContent() {
               ))}
             </div>
             
-            {/* --- NEW: URL-Based Pagination Controls --- */}
             {totalPages > 1 && (
               <div className="mt-12 flex justify-center items-center space-x-4">
                 <Link
@@ -264,4 +266,3 @@ export default function ProductPageContent() {
     </section>
   );
 }
-
