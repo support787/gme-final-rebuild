@@ -109,44 +109,57 @@ export default function ProductPageContent() {
   }, [allProducts, searchTerm, modalityFilter, brandFilter, locationFilter]);
 
   // --- CSV EXPORT FUNCTION ---
+  // --- UPDATED CSV EXPORT FUNCTION (CRASH PROOF) ---
   const handleExportCSV = () => {
+    console.log("Export button clicked!"); 
+
     const dataToExport = filteredProducts;
 
     if (dataToExport.length === 0) {
-      alert("No products to export!");
+      alert("No products found to export! Please try refreshing the page.");
       return;
     }
 
-    const headers = ['ID', 'Brand', 'Modality', 'Part Number', 'Description', 'Location', 'Price'];
+    const confirmDownload = confirm(`Ready to download ${dataToExport.length} items?`);
+    if (!confirmDownload) return;
 
-    const csvContent = [
-      headers.join(','),
-      ...dataToExport.map(product => [
-        `"${product.id}"`,
-        `"${product.brand || ''}"`,
-        `"${product.modality || ''}"`,
-        `"${product.partNumber || ''}"`,
-        `"${(product.description || '').replace(/"/g, '""')}"`, 
-        `"${product.location || ''}"`,
-        `"${product.price || ''}"`
-      ].join(','))
-    ].join('\n');
+    try {
+      const headers = ['ID', 'Brand', 'Modality', 'Part Number', 'Description', 'Location', 'Price'];
 
-    let filename = 'grand_inventory_full.csv';
-    if (searchTerm) filename = `grand_inventory_search_${searchTerm}.csv`;
-    else if (brandFilter) filename = `grand_inventory_${brandFilter}.csv`;
-    else if (modalityFilter) filename = `grand_inventory_${modalityFilter}.csv`;
-    else if (locationFilter) filename = `grand_inventory_${locationFilter}.csv`;
+      const csvContent = [
+        headers.join(','),
+        ...dataToExport.map(product => [
+          `"${product.id}"`,
+          `"${String(product.brand || '')}"`,
+          `"${String(product.modality || '')}"`,
+          `"${String(product.partNumber || '')}"`,
+          // FIX IS HERE: We wrap the description in String() before .replace
+          `"${String(product.description || '').replace(/"/g, '""')}"`, 
+          `"${String(product.location || '')}"`,
+          `"${String(product.price || '')}"`
+        ].join(','))
+      ].join('\n');
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', filename);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      let filename = 'grand_inventory_full.csv';
+      if (searchTerm) filename = `grand_inventory_search_${searchTerm}.csv`;
+      else if (brandFilter) filename = `grand_inventory_${brandFilter}.csv`;
+      else if (modalityFilter) filename = `grand_inventory_${modalityFilter}.csv`;
+      else if (locationFilter) filename = `grand_inventory_${locationFilter}.csv`;
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+    } catch (error) {
+      console.error("Export failed:", error);
+      alert(`Error exporting CSV: ${error.message}`);
+    }
   };
 
   // --- Search Logging ---
