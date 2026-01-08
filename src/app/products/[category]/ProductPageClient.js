@@ -110,6 +110,8 @@ export default function ProductPageContent() {
 
   // --- CSV EXPORT FUNCTION ---
   // --- UPDATED CSV EXPORT FUNCTION (CRASH PROOF) ---
+  
+// --- UPDATED CSV EXPORT FUNCTION (With Image URLs) ---
   const handleExportCSV = () => {
     console.log("Export button clicked!"); 
 
@@ -124,7 +126,8 @@ export default function ProductPageContent() {
     if (!confirmDownload) return;
 
     try {
-      const headers = ['ID', 'Brand', 'Modality', 'Part Number', 'Description', 'Location', 'Price'];
+      // Added 'Image URL' to the headers
+      const headers = ['ID', 'Brand', 'Modality', 'Part Number', 'Description', 'Image URL', 'Location', 'Price'];
 
       const csvContent = [
         headers.join(','),
@@ -133,8 +136,8 @@ export default function ProductPageContent() {
           `"${String(product.brand || '')}"`,
           `"${String(product.modality || '')}"`,
           `"${String(product.partNumber || '')}"`,
-          // FIX IS HERE: We wrap the description in String() before .replace
           `"${String(product.description || '').replace(/"/g, '""')}"`, 
+          `"${String(product.image || '')}"`, // <--- Added Image URL here
           `"${String(product.location || '')}"`,
           `"${String(product.price || '')}"`
         ].join(','))
