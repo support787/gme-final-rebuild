@@ -10,8 +10,8 @@ import { useAuth } from '../../../lib/AuthContext';
 
 const ITEMS_PER_PAGE = 20;
 
-// --- 1. HARDCODED LISTS FOR SIDEBAR (SEO HIGHWAYS) ---
-// These create static links that Google loves to crawl.
+// --- STATIC LISTS ---
+// Used to build the Accordion Menu
 const SIDEBAR_MODALITIES = [
   "C-ARM", "CATH", "CR/PRINTER", "CT", "INJECTOR", "MAMMO", 
   "MONITOR", "MRI", "NETWORK", "NUCLEAR", "PET/CT", 
@@ -19,8 +19,8 @@ const SIDEBAR_MODALITIES = [
 ];
 
 const SIDEBAR_BRANDS = [
-  "AGFA", "CISCO", "COSEL", "DELL", "EIZO", "FUJI", "GE", 
-  "HITACHI", "KODAK", "KONICA", "LIEBEL-FLARSHEIM", "LORAD", 
+  "AGFA", "CISCO", "COSEL", "DELL", "EIZO", "ESAOTE", "FUJI", "GE", 
+  "HITACHI", "HOLOGIC", "KODAK", "KONICA", "LIEBEL-FLARSHEIM", "LORAD", 
   "MALLINCKRODT", "MEDRAD", "NEC", "NEMOTO", "PHILIPS", 
   "SHIMADZU", "SIEMENS", "TOSHIBA"
 ];
@@ -36,6 +36,10 @@ export default function ProductPageContent() {
   const [allProducts, setAllProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // --- Accordion State ---
+  // Tracks which Brand section is currently expanded
+  const [expandedBrand, setExpandedBrand] = useState(null);
+
   // --- URL State Management ---
   const pageParam = searchParams.get('page');
   const pageNumber = pageParam ? parseInt(pageParam, 10) : 1;
@@ -43,20 +47,24 @@ export default function ProductPageContent() {
   const [inputValue, setInputValue] = useState(searchParams.get('search') || '');
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   
-  // These now react to both the Input Boxes AND the Sidebar Links
   const [modalityFilter, setModalityFilter] = useState(searchParams.get('modality') || '');
   const [brandFilter, setBrandFilter] = useState(searchParams.get('brand') || '');
   const [locationFilter, setLocationFilter] = useState(searchParams.get('location') || '');
   
   const lastLoggedSearch = useRef(null);
 
-  // --- Sync State with URL (Crucial for Sidebar Links) ---
-  // When a user clicks a Sidebar Link, the URL changes. We must update the state to match.
+  // --- Sync State with URL ---
   useEffect(() => {
+    const currentBrand = searchParams.get('brand') || '';
     setModalityFilter(searchParams.get('modality') || '');
-    setBrandFilter(searchParams.get('brand') || '');
+    setBrandFilter(currentBrand);
     setSearchTerm(searchParams.get('search') || '');
     setInputValue(searchParams.get('search') || '');
+
+    // Auto-expand the menu if a brand is selected in the URL
+    if (currentBrand) {
+      setExpandedBrand(currentBrand);
+    }
   }, [searchParams]);
 
   // --- Fetch Data ---
@@ -99,7 +107,6 @@ export default function ProductPageContent() {
   // --- ROBUST FILTER LOGIC ---
   const filteredProducts = useMemo(() => {
     let currentProducts = allProducts;
-    
     const cleanString = (str) => String(str || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
     if (searchTerm.trim()) {
@@ -196,7 +203,7 @@ export default function ProductPageContent() {
     }
   }, [searchTerm, isLoading, filteredProducts, category]);
 
-  // --- Pagination & URL Helpers ---
+  // --- Pagination & Navigation ---
   const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
   const paginatedProducts = filteredProducts.slice((pageNumber - 1) * ITEMS_PER_PAGE, pageNumber * ITEMS_PER_PAGE);
   const isSystemsPage = category === 'Systems';
@@ -223,17 +230,24 @@ export default function ProductPageContent() {
       router.replace(`${pathname}?${currentParams.toString()}`);
   }
 
-  // Helper to check if a sidebar link is currently active
-  const isActive = (key, value) => {
-      const currentVal = searchParams.get(key);
-      return currentVal && currentVal.toLowerCase() === value.toLowerCase();
-  }
+  // --- Accordion Logic ---
+  const toggleBrand = (brand) => {
+    if (expandedBrand === brand) {
+      setExpandedBrand(null); // Close if already open
+    } else {
+      setExpandedBrand(brand); // Open new one
+    }
+  };
+
+  // Helper to check active state
+  const isBrandActive = (brand) => brandFilter.toLowerCase() === brand.toLowerCase();
+  const isModalityActive = (mod) => modalityFilter.toLowerCase() === mod.toLowerCase();
 
   return (
     <section className="py-12 bg-slate-50 min-h-screen">
       <div className="container mx-auto px-4">
         
-        {/* TOP HEADER & ADMIN BUTTONS */}
+        {/* TOP HEADER */}
         <div className="flex flex-col md:flex-row justify-between items-center mb-8">
           <h2 className="text-3xl font-bold text-gray-800 mb-4 md:mb-0">{category} Inventory</h2>
           <div className="flex space-x-4">
@@ -250,7 +264,7 @@ export default function ProductPageContent() {
           </div>
         </div>
         
-        {/* TOP SEARCH BAR (Keep this for specific text searches) */}
+        {/* TOP SEARCH BAR */}
         <div className="bg-white p-6 rounded-lg shadow-sm mb-8">
              <div className="relative">
                 <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">Search by Part Number or Keyword</label>
@@ -272,74 +286,93 @@ export default function ProductPageContent() {
              </div>
         </div>
 
-        {/* --- MAIN LAYOUT: SIDEBAR + GRID --- */}
+        {/* --- MAIN LAYOUT: ACCORDION SIDEBAR + GRID --- */}
         <div className="flex flex-col lg:flex-row gap-8 items-start">
             
-            {/* LEFT COLUMN: SIDEBAR NAVIGATION (Desktop) */}
-            <aside className="w-full lg:w-64 flex-shrink-0 space-y-8 hidden lg:block">
-                {/* Modality Links */}
-                <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-100">
-                    <h3 className="font-bold text-gray-800 mb-4 border-b pb-2">Browse by Modality</h3>
-                    <div className="flex flex-col space-y-2">
-                        <Link href={pathname} className={`text-sm ${!searchParams.get('modality') ? 'font-bold text-teal-600' : 'text-gray-600 hover:text-teal-600'}`}>
-                            All Modalities
+            {/* LEFT COLUMN: ACCORDION NAVIGATION (Desktop) */}
+            <aside className="w-full lg:w-72 flex-shrink-0 hidden lg:block">
+                <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
+                    
+                    {/* Reset Button */}
+                    <div className="p-4 border-b bg-gray-50">
+                        <Link href={pathname} className="text-sm font-bold text-red-500 hover:text-red-700 flex items-center">
+                           <span>✕ Clear All Filters</span>
                         </Link>
-                        {SIDEBAR_MODALITIES.map(mod => (
-                            <Link 
-                                key={mod}
-                                href={`${pathname}?modality=${encodeURIComponent(mod)}`}
-                                className={`text-sm ${isActive('modality', mod) ? 'font-bold text-teal-600 bg-teal-50 -mx-2 px-2 py-1 rounded' : 'text-gray-600 hover:text-teal-600'}`}
-                            >
-                                {mod}
-                            </Link>
-                        ))}
                     </div>
-                </div>
 
-                {/* Brand Links */}
-                <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-100">
-                    <h3 className="font-bold text-gray-800 mb-4 border-b pb-2">Manufacturer</h3>
-                    <div className="flex flex-col space-y-2">
-                         <Link href={pathname} className={`text-sm ${!searchParams.get('brand') ? 'font-bold text-teal-600' : 'text-gray-600 hover:text-teal-600'}`}>
-                            All Brands
-                        </Link>
-                        {SIDEBAR_BRANDS.map(brand => (
-                            <Link 
-                                key={brand}
-                                href={`${pathname}?brand=${encodeURIComponent(brand)}`}
-                                className={`text-sm ${isActive('brand', brand) ? 'font-bold text-teal-600 bg-teal-50 -mx-2 px-2 py-1 rounded' : 'text-gray-600 hover:text-teal-600'}`}
-                            >
-                                {brand}
-                            </Link>
-                        ))}
-                    </div>
+                    {/* Brand List */}
+                    {SIDEBAR_BRANDS.map((brand) => {
+                        const isOpen = expandedBrand === brand;
+                        const isActive = isBrandActive(brand);
+
+                        return (
+                            <div key={brand} className="border-b border-gray-100 last:border-0">
+                                {/* Brand Header (Click to Toggle) */}
+                                <div className="flex">
+                                    {/* The Link forces the filter ONLY on the brand, clearing modality */}
+                                    <Link 
+                                        href={`${pathname}?brand=${encodeURIComponent(brand)}`}
+                                        onClick={() => toggleBrand(brand)}
+                                        className={`flex-1 p-4 flex justify-between items-center text-sm font-bold transition-colors duration-200 
+                                            ${isActive 
+                                                ? 'bg-green-500 text-white'  // Active Green Style
+                                                : 'bg-indigo-600 text-white hover:bg-indigo-700' // Default Blue Style
+                                            }`}
+                                    >
+                                        <span>{brand}</span>
+                                        {/* Chevron Icon */}
+                                        <span className="ml-2 transform transition-transform duration-200">
+                                            {isOpen ? '▼' : '›'}
+                                        </span>
+                                    </Link>
+                                </div>
+
+                                {/* Nested Modality List (Only if Open) */}
+                                {isOpen && (
+                                    <div className="bg-gray-50 py-2 animate-fadeIn">
+                                        <Link 
+                                            href={`${pathname}?brand=${encodeURIComponent(brand)}`}
+                                            className={`block px-8 py-2 text-sm hover:bg-gray-100 ${!modalityFilter ? 'font-bold text-teal-600' : 'text-gray-600'}`}
+                                        >
+                                            All {brand}
+                                        </Link>
+                                        {SIDEBAR_MODALITIES.map((mod) => (
+                                            <Link
+                                                key={mod}
+                                                // CLICKING THIS ADDS MODALITY TO THE URL (Brand + Modality)
+                                                href={`${pathname}?brand=${encodeURIComponent(brand)}&modality=${encodeURIComponent(mod)}`}
+                                                className={`block px-8 py-2 text-sm hover:bg-gray-100 transition-colors
+                                                    ${isModalityActive(mod) 
+                                                        ? 'font-bold text-teal-600 border-l-4 border-teal-600 bg-white' 
+                                                        : 'text-gray-600'
+                                                    }`}
+                                            >
+                                                {mod}
+                                            </Link>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
                 </div>
             </aside>
 
             {/* RIGHT COLUMN: PRODUCT GRID */}
             <div className="flex-1 w-full">
                 
-                {/* Mobile-Only Filters (Dropdowns) */}
+                {/* Mobile-Only Filters (Simple Dropdowns) */}
                 <div className="lg:hidden grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                    <select 
-                        className="p-2 border rounded-md" 
-                        value={modalityFilter} 
-                        onChange={(e) => handleFilterChange('modality', e.target.value)}
-                    >
-                        <option value="">All Modalities</option>
-                        {SIDEBAR_MODALITIES.map(m => <option key={m} value={m}>{m}</option>)}
-                    </select>
-                    <select 
-                        className="p-2 border rounded-md" 
-                        value={brandFilter} 
-                        onChange={(e) => handleFilterChange('brand', e.target.value)}
-                    >
+                    <select className="p-2 border rounded-md" value={brandFilter} onChange={(e) => handleFilterChange('brand', e.target.value)}>
                         <option value="">All Manufacturers</option>
                         {SIDEBAR_BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
                     </select>
+                    <select className="p-2 border rounded-md" value={modalityFilter} onChange={(e) => handleFilterChange('modality', e.target.value)}>
+                        <option value="">All Modalities</option>
+                        {SIDEBAR_MODALITIES.map(m => <option key={m} value={m}>{m}</option>)}
+                    </select>
                 </div>
 
-                {/* Loading / Empty States */}
                 {isLoading ? (
                     <div className="text-center py-20 bg-white rounded-lg shadow-sm">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
@@ -347,50 +380,34 @@ export default function ProductPageContent() {
                     </div>
                 ) : (
                     <>
-                        {/* Results Count */}
                         <div className="mb-4 text-sm text-gray-600 flex justify-between items-center">
                             <span>Showing {paginatedProducts.length} of {filteredProducts.length} results</span>
                             {(searchTerm || brandFilter || modalityFilter) && (
-                                <button 
-                                    onClick={() => router.push(pathname)}
-                                    className="text-red-500 hover:text-red-700 text-sm font-medium"
-                                >
-                                    Clear All Filters
-                                </button>
+                                <button onClick={() => router.push(pathname)} className="text-red-500 hover:text-red-700 text-sm font-medium">Clear All Filters</button>
                             )}
                         </div>
 
-                        {/* The Grid */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                             {paginatedProducts.map((product) => (
                                 <ProductCard key={product.id} product={product} />
                             ))}
                         </div>
                         
-                        {/* Pagination */}
                         {totalPages > 1 && (
                             <div className="mt-12 flex justify-center items-center space-x-4">
-                                <Link
-                                    href={createPageURL(Math.max(1, pageNumber - 1))}
-                                    className={`px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 ${pageNumber === 1 ? 'opacity-50 pointer-events-none' : ''}`}
-                                >
+                                <Link href={createPageURL(Math.max(1, pageNumber - 1))} className={`px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 ${pageNumber === 1 ? 'opacity-50 pointer-events-none' : ''}`}>
                                     ← Previous
                                 </Link>
                                 <span className="text-sm text-gray-700">Page {pageNumber} of {totalPages}</span>
-                                <Link
-                                    href={createPageURL(Math.min(totalPages, pageNumber + 1))}
-                                    className={`px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 ${pageNumber === totalPages ? 'opacity-50 pointer-events-none' : ''}`}
-                                >
+                                <Link href={createPageURL(Math.min(totalPages, pageNumber + 1))} className={`px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 ${pageNumber === totalPages ? 'opacity-50 pointer-events-none' : ''}`}>
                                     Next →
                                 </Link>
                             </div>
                         )}
-
-                        {/* No Results */}
                         {!isLoading && filteredProducts.length === 0 && (
                             <div className="text-center py-20 bg-white rounded-lg shadow-sm">
                                 <p className="text-xl text-gray-400 mb-2">No products found</p>
-                                <p className="text-gray-500">Try adjusting your filters or search term.</p>
+                                <p className="text-gray-500">Try adjusting your filters.</p>
                             </div>
                         )}
                     </>
