@@ -10,17 +10,19 @@ import { useAuth } from '../../../lib/AuthContext';
 
 const ITEMS_PER_PAGE = 20;
 
-// Swapped Arrays logic later in the code, but definitions stay same
+// MODALITY FIRST (Main Menu)
 const SIDEBAR_MODALITIES = [
-  "CT","MRI", "CATH", "X-RAY","C-ARM","MAMMO","PET/CT", "NUCLEAR","TUBE", "ULTRASOUND", "CR/PRINTER",  "INJECTOR",  
-  "MONITOR", "UPS", "POWER SUPPLY", "WORKSTATION" ,"NETWORK"
+  "C-ARM", "CATH", "CR/PRINTER", "CT", "INJECTOR", "MAMMO", 
+  "MONITOR", "MRI", "NETWORK", "NUCLEAR", "PET/CT", 
+  "POWER SUPPLY", "TUBE", "ULTRASOUND", "UPS", "WORKSTATION", "X-RAY"
 ];
 
+// MANUFACTURER SECOND (Sub Menu)
 const SIDEBAR_BRANDS = [
-  "GE","SIEMENS", "PHILIPS", "TOSHIBA", "HITACHI", "HOLOGIC", "MEDRAD", "LORAD", "SHIMADZU", 
-  "AGFA", "FUJI", "KODAK", "KONICA", "EIZO", "NEC", "LIEBEL-FLARSHEIM", "COSEL", "DELL", 
-  "ESAOTE",  "CISCO", "MALLINCKRODT", "NEMOTO",  
-    
+  "AGFA", "CISCO", "COSEL", "DELL", "EIZO", "ESAOTE", "FUJI", "GE", 
+  "HITACHI", "HOLOGIC", "KODAK", "KONICA", "LIEBEL-FLARSHEIM", "LORAD", 
+  "MALLINCKRODT", "MEDRAD", "NEC", "NEMOTO", "PHILIPS", 
+  "SHIMADZU", "SIEMENS", "TOSHIBA"
 ];
 
 function ProductPageContent() {
@@ -34,8 +36,11 @@ function ProductPageContent() {
   const [allProducts, setAllProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Renamed for clarity: tracks which Modality is open
+  // Tracks which Modality menu is open
   const [expandedCategory, setExpandedCategory] = useState(null);
+
+  // NEW: Ref to detect clicks outside the sidebar
+  const sidebarRef = useRef(null);
 
   // URL State
   const pageParam = searchParams.get('page');
@@ -45,15 +50,28 @@ function ProductPageContent() {
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   const [modalityFilter, setModalityFilter] = useState(searchParams.get('modality') || '');
   const [brandFilter, setBrandFilter] = useState(searchParams.get('brand') || '');
-  const [locationFilter, setLocationFilter] = useState(searchParams.get('location') || '');
   
   const lastLoggedSearch = useRef(null);
 
+  // --- NEW: CLOSE MENU ON CLICK OUTSIDE ---
+  useEffect(() => {
+    function handleClickOutside(event) {
+      // If menu is open AND click is NOT inside the sidebar...
+      if (expandedCategory && sidebarRef.current && !sidebarRef.current.contains(event.target)) {
+        setExpandedCategory(null); // Close it!
+      }
+    }
+    // Bind the event listener
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      // Unbind it when leaving the page (cleanup)
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [expandedCategory]);
+
+
   // Sync State with URL
   useEffect(() => {
-    // Only auto-expand if we land on the page with a modality pre-selected,
-    // AND we haven't manually closed it (logic handled in toggle).
-    // For now, we keep it simple: sync filters only.
     setModalityFilter(searchParams.get('modality') || '');
     setBrandFilter(searchParams.get('brand') || '');
     setSearchTerm(searchParams.get('search') || '');
@@ -122,14 +140,8 @@ function ProductPageContent() {
             cleanString(p.brand).includes(cleanFilter)
         );
     }
-    if (locationFilter.trim()) {
-        const cleanFilter = cleanString(locationFilter);
-        currentProducts = currentProducts.filter(p => 
-            cleanString(p.location).includes(cleanFilter)
-        );
-    }
     return currentProducts;
-  }, [allProducts, searchTerm, modalityFilter, brandFilter, locationFilter]);
+  }, [allProducts, searchTerm, modalityFilter, brandFilter]);
 
   // CSV Export
   const handleExportCSV = () => {
@@ -219,16 +231,13 @@ function ProductPageContent() {
       router.replace(`${pathname}?${currentParams.toString()}`);
   }
 
-  // Toggle Logic (For Modality First)
+  // Toggle Logic
   const toggleCategory = (cat) => {
     if (expandedCategory === cat) setExpandedCategory(null);
     else setExpandedCategory(cat);
   };
   
-  // Helper to force-close menu when a sub-item is clicked
-  const selectSubItem = () => {
-    setExpandedCategory(null);
-  };
+  const selectSubItem = () => setExpandedCategory(null);
 
   const isBrandActive = (brand) => brandFilter.toLowerCase() === brand.toLowerCase();
   const isModalityActive = (mod) => modalityFilter.toLowerCase() === mod.toLowerCase();
@@ -285,14 +294,17 @@ function ProductPageContent() {
             
             {/* SIDEBAR (FLYOUT) */}
             <aside className="w-full lg:w-64 flex-shrink-0 hidden lg:block relative z-20">
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                {/* ATTACHED REF HERE: This <div> is what we watch. 
+                   Clicks outside this specific box will close the menu.
+                */}
+                <div ref={sidebarRef} className="bg-white rounded-lg shadow-sm border border-gray-200">
                     <div className="p-4 border-b bg-gray-50">
                         <Link href={pathname || '#'} className="text-sm font-bold text-red-500 hover:text-red-700 flex items-center">
                            <span>✕ Clear All Filters</span>
                         </Link>
                     </div>
 
-                    {/* MODALITY FIRST (Swapped from Brand) */}
+                    {/* MODALITY FIRST */}
                     {SIDEBAR_MODALITIES.map((mod) => {
                         const isOpen = expandedCategory === mod;
                         const isActive = isModalityActive(mod);
@@ -319,19 +331,17 @@ function ProductPageContent() {
                                         </div>
                                         <Link 
                                             href={`${pathname}?modality=${encodeURIComponent(mod)}`}
-                                            onClick={selectSubItem} // CLOSE MENU ON CLICK
+                                            onClick={selectSubItem} 
                                             className={`block px-4 py-2 text-sm hover:bg-teal-50 hover:text-teal-700 border-b border-gray-50 ${!brandFilter ? 'font-bold text-teal-600' : 'text-gray-600'}`}
                                         >
                                             View All {mod}
                                         </Link>
                                         
-                                        {/* BRAND SUB-LIST */}
                                         {SIDEBAR_BRANDS.map((brand) => (
                                             <Link
                                                 key={brand}
-                                                // URL includes BOTH Modality (Parent) and Brand (Child)
                                                 href={`${pathname}?modality=${encodeURIComponent(mod)}&brand=${encodeURIComponent(brand)}`}
-                                                onClick={selectSubItem} // CLOSE MENU ON CLICK
+                                                onClick={selectSubItem}
                                                 className={`block px-4 py-2 text-sm transition-colors
                                                     ${isBrandActive(brand) 
                                                         ? 'font-bold text-teal-600 bg-teal-50' 
