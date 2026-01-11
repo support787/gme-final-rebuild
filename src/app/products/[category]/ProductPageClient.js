@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, Suspense } from 'react'; // Added Suspense
 import { useParams, useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { collection, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../../lib/firebase';
@@ -23,7 +23,8 @@ const SIDEBAR_BRANDS = [
   "SHIMADZU", "SIEMENS", "TOSHIBA"
 ];
 
-export default function ProductPageContent() {
+// 1. Rename the main function to 'ProductPageContent' (Internal use only)
+function ProductPageContent() {
   const { isAdmin } = useAuth();
   const params = useParams();
   const router = useRouter();
@@ -33,24 +34,21 @@ export default function ProductPageContent() {
 
   const [allProducts, setAllProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  // Tracks which Brand section is currently expanded (Flyout)
   const [expandedBrand, setExpandedBrand] = useState(null);
 
-  // --- URL State Management ---
+  // URL State
   const pageParam = searchParams.get('page');
   const pageNumber = pageParam ? parseInt(pageParam, 10) : 1;
 
   const [inputValue, setInputValue] = useState(searchParams.get('search') || '');
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
-  
   const [modalityFilter, setModalityFilter] = useState(searchParams.get('modality') || '');
   const [brandFilter, setBrandFilter] = useState(searchParams.get('brand') || '');
   const [locationFilter, setLocationFilter] = useState(searchParams.get('location') || '');
   
   const lastLoggedSearch = useRef(null);
 
-  // --- Sync State with URL ---
+  // Sync State with URL
   useEffect(() => {
     const currentBrand = searchParams.get('brand') || '';
     setModalityFilter(searchParams.get('modality') || '');
@@ -63,7 +61,7 @@ export default function ProductPageContent() {
     }
   }, [searchParams]);
 
-  // --- Fetch Data ---
+  // Fetch Data
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -100,7 +98,7 @@ export default function ProductPageContent() {
     }
   }, [category]);
 
-  // --- ROBUST FILTER LOGIC ---
+  // Filters
   const filteredProducts = useMemo(() => {
     let currentProducts = allProducts;
     const cleanString = (str) => String(str || '').toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -134,7 +132,7 @@ export default function ProductPageContent() {
     return currentProducts;
   }, [allProducts, searchTerm, modalityFilter, brandFilter, locationFilter]);
 
-  // --- CSV EXPORT FUNCTION ---
+  // CSV Export
   const handleExportCSV = () => {
     const dataToExport = filteredProducts;
     if (dataToExport.length === 0) {
@@ -180,7 +178,7 @@ export default function ProductPageContent() {
     }
   };
 
-  // --- Search Logging ---
+  // Search Logging
   useEffect(() => {
     if (searchTerm && !isLoading && category === 'Parts' && lastLoggedSearch.current !== searchTerm) {
       const found = filteredProducts.length > 0;
@@ -199,11 +197,7 @@ export default function ProductPageContent() {
     }
   }, [searchTerm, isLoading, filteredProducts, category]);
 
-  // --- Pagination & Navigation ---
-  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
-  const paginatedProducts = filteredProducts.slice((pageNumber - 1) * ITEMS_PER_PAGE, pageNumber * ITEMS_PER_PAGE);
-  const isSystemsPage = category === 'Systems';
-
+  // Pagination Helper
   const createPageURL = (pageNumber) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set('page', pageNumber.toString());
@@ -226,23 +220,22 @@ export default function ProductPageContent() {
       router.replace(`${pathname}?${currentParams.toString()}`);
   }
 
-  // --- Flyout / Toggle Logic ---
+  // Helper Logic
   const toggleBrand = (brand) => {
-    if (expandedBrand === brand) {
-      setExpandedBrand(null);
-    } else {
-      setExpandedBrand(brand);
-    }
+    if (expandedBrand === brand) setExpandedBrand(null);
+    else setExpandedBrand(brand);
   };
-
   const isBrandActive = (brand) => brandFilter.toLowerCase() === brand.toLowerCase();
   const isModalityActive = (mod) => modalityFilter.toLowerCase() === mod.toLowerCase();
+  const paginatedProducts = filteredProducts.slice((pageNumber - 1) * ITEMS_PER_PAGE, pageNumber * ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+  const isSystemsPage = category === 'Systems';
 
   return (
     <section className="py-12 bg-slate-50 min-h-screen">
       <div className="container mx-auto px-4">
         
-        {/* TOP HEADER */}
+        {/* HEADER */}
         <div className="flex flex-col md:flex-row justify-between items-center mb-8">
           <h2 className="text-3xl font-bold text-gray-800 mb-4 md:mb-0">{category} Inventory</h2>
           <div className="flex space-x-4">
@@ -259,7 +252,7 @@ export default function ProductPageContent() {
           </div>
         </div>
         
-        {/* SEARCH BAR */}
+        {/* SEARCH */}
         <div className="bg-white p-6 rounded-lg shadow-sm mb-8">
              <div className="relative">
                 <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">Search by Part Number or Keyword</label>
@@ -281,31 +274,133 @@ export default function ProductPageContent() {
              </div>
         </div>
 
-        {/* --- MAIN LAYOUT --- */}
+        {/* LAYOUT */}
         <div className="flex flex-col lg:flex-row gap-8 items-start">
             
-            {/* LEFT SIDEBAR (FLYOUT STYLE) */}
+            {/* SIDEBAR (FLYOUT) */}
             <aside className="w-full lg:w-64 flex-shrink-0 hidden lg:block relative z-20">
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                    
-                    {/* Clear Filters */}
                     <div className="p-4 border-b bg-gray-50">
-                        <Link href={pathname} className="text-sm font-bold text-red-500 hover:text-red-700 flex items-center">
+                        <Link href={pathname || '#'} className="text-sm font-bold text-red-500 hover:text-red-700 flex items-center">
                            <span>✕ Clear All Filters</span>
                         </Link>
                     </div>
 
-                    {/* Brand List */}
                     {SIDEBAR_BRANDS.map((brand) => {
                         const isOpen = expandedBrand === brand;
                         const isActive = isBrandActive(brand);
 
                         return (
                             <div key={brand} className="relative group"> 
-                                {/* 'relative' ensures the sub-menu anchors to THIS brand button.
-                                */}
-
                                 <Link 
                                     href={`${pathname}?brand=${encodeURIComponent(brand)}`}
                                     onClick={() => toggleBrand(brand)}
-                                    className={`flex w-full justify-between items-center px-4 py-3 text-sm font-medium
+                                    className={`flex w-full justify-between items-center px-4 py-3 text-sm font-medium border-b border-gray-100 last:border-0 transition-colors
+                                        ${isActive 
+                                            ? 'bg-teal-50 text-teal-700 border-l-4 border-teal-600'
+                                            : 'text-gray-600 hover:text-teal-600 hover:bg-gray-50'
+                                        }`}
+                                >
+                                    <span>{brand}</span>
+                                    <span className="ml-2 text-gray-400">›</span>
+                                </Link>
+
+                                {isOpen && (
+                                    <div className="absolute left-full top-0 ml-1 w-56 bg-white border border-gray-200 shadow-xl rounded-r-lg rounded-b-lg overflow-y-auto max-h-[80vh] z-50 animate-fadeIn">
+                                        <div className="bg-gray-50 px-4 py-2 border-b text-xs font-bold text-gray-500 uppercase">
+                                            {brand} Modalities
+                                        </div>
+                                        <Link 
+                                            href={`${pathname}?brand=${encodeURIComponent(brand)}`}
+                                            className={`block px-4 py-2 text-sm hover:bg-teal-50 hover:text-teal-700 border-b border-gray-50 ${!modalityFilter ? 'font-bold text-teal-600' : 'text-gray-600'}`}
+                                        >
+                                            View All {brand}
+                                        </Link>
+                                        {SIDEBAR_MODALITIES.map((mod) => (
+                                            <Link
+                                                key={mod}
+                                                href={`${pathname}?brand=${encodeURIComponent(brand)}&modality=${encodeURIComponent(mod)}`}
+                                                className={`block px-4 py-2 text-sm transition-colors
+                                                    ${isModalityActive(mod) 
+                                                        ? 'font-bold text-teal-600 bg-teal-50' 
+                                                        : 'text-gray-600 hover:bg-gray-50 hover:text-teal-600'
+                                                    }`}
+                                            >
+                                                {mod}
+                                            </Link>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+            </aside>
+
+            {/* CONTENT */}
+            <div className="flex-1 w-full z-10">
+                <div className="lg:hidden grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                    <select className="p-2 border rounded-md" value={brandFilter} onChange={(e) => handleFilterChange('brand', e.target.value)}>
+                        <option value="">All Manufacturers</option>
+                        {SIDEBAR_BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
+                    </select>
+                    <select className="p-2 border rounded-md" value={modalityFilter} onChange={(e) => handleFilterChange('modality', e.target.value)}>
+                        <option value="">All Modalities</option>
+                        {SIDEBAR_MODALITIES.map(m => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                </div>
+
+                {isLoading ? (
+                    <div className="text-center py-20 bg-white rounded-lg shadow-sm">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
+                        <p className="text-gray-500">Loading Inventory...</p>
+                    </div>
+                ) : (
+                    <>
+                        <div className="mb-4 text-sm text-gray-600 flex justify-between items-center">
+                            <span>Showing {paginatedProducts.length} of {filteredProducts.length} results</span>
+                            {(searchTerm || brandFilter || modalityFilter) && (
+                                <button onClick={() => router.push(pathname || '')} className="text-red-500 hover:text-red-700 text-sm font-medium">Clear All Filters</button>
+                            )}
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            {paginatedProducts.map((product) => (
+                                <ProductCard key={product.id} product={product} />
+                            ))}
+                        </div>
+                        
+                        {totalPages > 1 && (
+                            <div className="mt-12 flex justify-center items-center space-x-4">
+                                <Link href={createPageURL(Math.max(1, pageNumber - 1))} className={`px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 ${pageNumber === 1 ? 'opacity-50 pointer-events-none' : ''}`}>
+                                    ← Previous
+                                </Link>
+                                <span className="text-sm text-gray-700">Page {pageNumber} of {totalPages}</span>
+                                <Link href={createPageURL(Math.min(totalPages, pageNumber + 1))} className={`px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 ${pageNumber === totalPages ? 'opacity-50 pointer-events-none' : ''}`}>
+                                    Next →
+                                </Link>
+                            </div>
+                        )}
+                        {!isLoading && filteredProducts.length === 0 && (
+                            <div className="text-center py-20 bg-white rounded-lg shadow-sm">
+                                <p className="text-xl text-gray-400 mb-2">No products found</p>
+                                <p className="text-gray-500">Try adjusting your filters.</p>
+                            </div>
+                        )}
+                    </>
+                )}
+            </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// 2. Export the Wrapper! This is what fixes the "Build Failed" error.
+export default function ProductPageClient() {
+  return (
+    <Suspense fallback={<div className="text-center py-20">Loading...</div>}>
+      <ProductPageContent />
+    </Suspense>
+  );
+}
