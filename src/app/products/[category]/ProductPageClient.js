@@ -31,7 +31,7 @@ const SIDEBAR_BRANDS = [
 // 2. SYSTEMS LISTS (Edit these for Systems!)
 // ==========================================
 const SYSTEMS_MODALITIES = [
-  "CT", "MRI", "CATH/AHGIO", "PET/CT", "MAMMO", "SPECT/CT, "C-ARM", "DR", "R/F", "ULTRASOUND"
+  "CT", "MRI", "CATH/AHGIO", "PET/CT", "MAMMO", "SPECT/CT", "C-ARM", "DR", "R/F", "ULTRASOUND"
 ];
 
 const SYSTEMS_BRANDS = [
