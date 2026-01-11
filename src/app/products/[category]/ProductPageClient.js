@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef, Suspense } from 'react'; // Added Suspense
+import { useState, useEffect, useMemo, useRef, Suspense } from 'react';
 import { useParams, useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { collection, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../../lib/firebase';
@@ -10,6 +10,7 @@ import { useAuth } from '../../../lib/AuthContext';
 
 const ITEMS_PER_PAGE = 20;
 
+// Swapped Arrays logic later in the code, but definitions stay same
 const SIDEBAR_MODALITIES = [
   "C-ARM", "CATH", "CR/PRINTER", "CT", "INJECTOR", "MAMMO", 
   "MONITOR", "MRI", "NETWORK", "NUCLEAR", "PET/CT", 
@@ -23,7 +24,6 @@ const SIDEBAR_BRANDS = [
   "SHIMADZU", "SIEMENS", "TOSHIBA"
 ];
 
-// 1. Rename the main function to 'ProductPageContent' (Internal use only)
 function ProductPageContent() {
   const { isAdmin } = useAuth();
   const params = useParams();
@@ -34,7 +34,9 @@ function ProductPageContent() {
 
   const [allProducts, setAllProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [expandedBrand, setExpandedBrand] = useState(null);
+  
+  // Renamed for clarity: tracks which Modality is open
+  const [expandedCategory, setExpandedCategory] = useState(null);
 
   // URL State
   const pageParam = searchParams.get('page');
@@ -50,15 +52,13 @@ function ProductPageContent() {
 
   // Sync State with URL
   useEffect(() => {
-    const currentBrand = searchParams.get('brand') || '';
+    // Only auto-expand if we land on the page with a modality pre-selected,
+    // AND we haven't manually closed it (logic handled in toggle).
+    // For now, we keep it simple: sync filters only.
     setModalityFilter(searchParams.get('modality') || '');
-    setBrandFilter(currentBrand);
+    setBrandFilter(searchParams.get('brand') || '');
     setSearchTerm(searchParams.get('search') || '');
     setInputValue(searchParams.get('search') || '');
-
-    if (currentBrand) {
-      setExpandedBrand(currentBrand);
-    }
   }, [searchParams]);
 
   // Fetch Data
@@ -220,13 +220,20 @@ function ProductPageContent() {
       router.replace(`${pathname}?${currentParams.toString()}`);
   }
 
-  // Helper Logic
-  const toggleBrand = (brand) => {
-    if (expandedBrand === brand) setExpandedBrand(null);
-    else setExpandedBrand(brand);
+  // Toggle Logic (For Modality First)
+  const toggleCategory = (cat) => {
+    if (expandedCategory === cat) setExpandedCategory(null);
+    else setExpandedCategory(cat);
   };
+  
+  // Helper to force-close menu when a sub-item is clicked
+  const selectSubItem = () => {
+    setExpandedCategory(null);
+  };
+
   const isBrandActive = (brand) => brandFilter.toLowerCase() === brand.toLowerCase();
   const isModalityActive = (mod) => modalityFilter.toLowerCase() === mod.toLowerCase();
+  
   const paginatedProducts = filteredProducts.slice((pageNumber - 1) * ITEMS_PER_PAGE, pageNumber * ITEMS_PER_PAGE);
   const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
   const isSystemsPage = category === 'Systems';
@@ -286,47 +293,53 @@ function ProductPageContent() {
                         </Link>
                     </div>
 
-                    {SIDEBAR_BRANDS.map((brand) => {
-                        const isOpen = expandedBrand === brand;
-                        const isActive = isBrandActive(brand);
+                    {/* MODALITY FIRST (Swapped from Brand) */}
+                    {SIDEBAR_MODALITIES.map((mod) => {
+                        const isOpen = expandedCategory === mod;
+                        const isActive = isModalityActive(mod);
 
                         return (
-                            <div key={brand} className="relative group"> 
+                            <div key={mod} className="relative group"> 
                                 <Link 
-                                    href={`${pathname}?brand=${encodeURIComponent(brand)}`}
-                                    onClick={() => toggleBrand(brand)}
+                                    href={`${pathname}?modality=${encodeURIComponent(mod)}`}
+                                    onClick={() => toggleCategory(mod)}
                                     className={`flex w-full justify-between items-center px-4 py-3 text-sm font-medium border-b border-gray-100 last:border-0 transition-colors
                                         ${isActive 
                                             ? 'bg-teal-50 text-teal-700 border-l-4 border-teal-600'
                                             : 'text-gray-600 hover:text-teal-600 hover:bg-gray-50'
                                         }`}
                                 >
-                                    <span>{brand}</span>
+                                    <span>{mod}</span>
                                     <span className="ml-2 text-gray-400">›</span>
                                 </Link>
 
                                 {isOpen && (
                                     <div className="absolute left-full top-0 ml-1 w-56 bg-white border border-gray-200 shadow-xl rounded-r-lg rounded-b-lg overflow-y-auto max-h-[80vh] z-50 animate-fadeIn">
                                         <div className="bg-gray-50 px-4 py-2 border-b text-xs font-bold text-gray-500 uppercase">
-                                            {brand} Modalities
+                                            Manufacturers for {mod}
                                         </div>
                                         <Link 
-                                            href={`${pathname}?brand=${encodeURIComponent(brand)}`}
-                                            className={`block px-4 py-2 text-sm hover:bg-teal-50 hover:text-teal-700 border-b border-gray-50 ${!modalityFilter ? 'font-bold text-teal-600' : 'text-gray-600'}`}
+                                            href={`${pathname}?modality=${encodeURIComponent(mod)}`}
+                                            onClick={selectSubItem} // CLOSE MENU ON CLICK
+                                            className={`block px-4 py-2 text-sm hover:bg-teal-50 hover:text-teal-700 border-b border-gray-50 ${!brandFilter ? 'font-bold text-teal-600' : 'text-gray-600'}`}
                                         >
-                                            View All {brand}
+                                            View All {mod}
                                         </Link>
-                                        {SIDEBAR_MODALITIES.map((mod) => (
+                                        
+                                        {/* BRAND SUB-LIST */}
+                                        {SIDEBAR_BRANDS.map((brand) => (
                                             <Link
-                                                key={mod}
-                                                href={`${pathname}?brand=${encodeURIComponent(brand)}&modality=${encodeURIComponent(mod)}`}
+                                                key={brand}
+                                                // URL includes BOTH Modality (Parent) and Brand (Child)
+                                                href={`${pathname}?modality=${encodeURIComponent(mod)}&brand=${encodeURIComponent(brand)}`}
+                                                onClick={selectSubItem} // CLOSE MENU ON CLICK
                                                 className={`block px-4 py-2 text-sm transition-colors
-                                                    ${isModalityActive(mod) 
+                                                    ${isBrandActive(brand) 
                                                         ? 'font-bold text-teal-600 bg-teal-50' 
                                                         : 'text-gray-600 hover:bg-gray-50 hover:text-teal-600'
                                                     }`}
                                             >
-                                                {mod}
+                                                {brand}
                                             </Link>
                                         ))}
                                     </div>
@@ -340,13 +353,13 @@ function ProductPageContent() {
             {/* CONTENT */}
             <div className="flex-1 w-full z-10">
                 <div className="lg:hidden grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                    <select className="p-2 border rounded-md" value={brandFilter} onChange={(e) => handleFilterChange('brand', e.target.value)}>
-                        <option value="">All Manufacturers</option>
-                        {SIDEBAR_BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
-                    </select>
                     <select className="p-2 border rounded-md" value={modalityFilter} onChange={(e) => handleFilterChange('modality', e.target.value)}>
                         <option value="">All Modalities</option>
                         {SIDEBAR_MODALITIES.map(m => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                    <select className="p-2 border rounded-md" value={brandFilter} onChange={(e) => handleFilterChange('brand', e.target.value)}>
+                        <option value="">All Manufacturers</option>
+                        {SIDEBAR_BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
                     </select>
                 </div>
 
@@ -396,7 +409,6 @@ function ProductPageContent() {
   );
 }
 
-// 2. Export the Wrapper! This is what fixes the "Build Failed" error.
 export default function ProductPageClient() {
   return (
     <Suspense fallback={<div className="text-center py-20">Loading...</div>}>
