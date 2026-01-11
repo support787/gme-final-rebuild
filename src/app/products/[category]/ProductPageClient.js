@@ -10,6 +10,9 @@ import { useAuth } from '../../../lib/AuthContext';
 
 const ITEMS_PER_PAGE = 20;
 
+// ==========================================
+// 1. PARTS LISTS (Your existing data)
+// ==========================================
 // MODALITY FIRST (Main Menu)
 const SIDEBAR_MODALITIES = [
   "CT", "MRI", "CATH", "C-ARM", "X-RAY", "MAMMO", "PET/CT", "TUBE", "NUCLEAR", 
@@ -24,6 +27,18 @@ const SIDEBAR_BRANDS = [
   "ESAOTE", "FUJI", "LIEBEL-FLARSHEIM", "MALLINCKRODT", "NEMOTO"
 ];
 
+// ==========================================
+// 2. SYSTEMS LISTS (Edit these for Systems!)
+// ==========================================
+const SYSTEMS_MODALITIES = [
+  "CT", "MRI", "CATH/AHGIO", "PET/CT", "MAMMO", "SPECT/CT, "C-ARM", "DR", "R/F", "ULTRASOUND"
+];
+
+const SYSTEMS_BRANDS = [
+  "GE", "SIEMENS", "PHILIPS", "TOSHIBA", "CANON", "HITACHI", "HOLOGIC"
+];
+
+
 function ProductPageContent() {
   const { isAdmin } = useAuth();
   const params = useParams();
@@ -31,14 +46,18 @@ function ProductPageContent() {
   const searchParams = useSearchParams();
   const pathname = usePathname(); 
   const category = params.category;
+  
+  // Detect if we are on the Systems page
+  const isSystemsPage = category === 'Systems';
+
+  // --- DYNAMICALLY CHOOSE WHICH LIST TO USE ---
+  const SIDEBAR_MODALITIES = isSystemsPage ? SYSTEMS_MODALITIES : PARTS_MODALITIES;
+  const SIDEBAR_BRANDS = isSystemsPage ? SYSTEMS_BRANDS : PARTS_BRANDS;
 
   const [allProducts, setAllProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Tracks which Modality menu is open
   const [expandedCategory, setExpandedCategory] = useState(null);
-
-  // NEW: Ref to detect clicks outside the sidebar
   const sidebarRef = useRef(null);
 
   // URL State
@@ -52,18 +71,15 @@ function ProductPageContent() {
   
   const lastLoggedSearch = useRef(null);
 
-  // --- NEW: CLOSE MENU ON CLICK OUTSIDE ---
+  // Close menu on click outside
   useEffect(() => {
     function handleClickOutside(event) {
-      // If menu is open AND click is NOT inside the sidebar...
       if (expandedCategory && sidebarRef.current && !sidebarRef.current.contains(event.target)) {
-        setExpandedCategory(null); // Close it!
+        setExpandedCategory(null);
       }
     }
-    // Bind the event listener
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      // Unbind it when leaving the page (cleanup)
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [expandedCategory]);
@@ -168,10 +184,8 @@ function ProductPageContent() {
         ].join(','))
       ].join('\n');
 
-      let filename = 'grand_inventory_full.csv';
-      if (searchTerm) filename = `grand_inventory_search_${searchTerm}.csv`;
-      else if (brandFilter) filename = `grand_inventory_${brandFilter}.csv`;
-      else if (modalityFilter) filename = `grand_inventory_${modalityFilter}.csv`;
+      let filename = isSystemsPage ? 'grand_systems.csv' : 'grand_parts.csv';
+      if (searchTerm) filename = `grand_search_${searchTerm}.csv`;
 
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
@@ -230,7 +244,6 @@ function ProductPageContent() {
       router.replace(`${pathname}?${currentParams.toString()}`);
   }
 
-  // Toggle Logic
   const toggleCategory = (cat) => {
     if (expandedCategory === cat) setExpandedCategory(null);
     else setExpandedCategory(cat);
@@ -243,7 +256,6 @@ function ProductPageContent() {
   
   const paginatedProducts = filteredProducts.slice((pageNumber - 1) * ITEMS_PER_PAGE, pageNumber * ITEMS_PER_PAGE);
   const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
-  const isSystemsPage = category === 'Systems';
 
   return (
     <section className="py-12 bg-slate-50 min-h-screen">
@@ -269,12 +281,12 @@ function ProductPageContent() {
         {/* SEARCH */}
         <div className="bg-white p-6 rounded-lg shadow-sm mb-8">
              <div className="relative">
-                <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">Search by Part Number or Keyword</label>
+                <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">Search by Part Number, Model or Keyword</label>
                 <div className="flex gap-2">
                     <input 
                       type="text" 
                       id="search" 
-                      placeholder="e.g., 45356713149 or Siemens Coil..." 
+                      placeholder={isSystemsPage ? "e.g. Optima 660..." : "e.g., 45356713149..."}
                       className="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500" 
                       value={inputValue} 
                       onChange={(e) => setInputValue(e.target.value)}
@@ -293,9 +305,6 @@ function ProductPageContent() {
             
             {/* SIDEBAR (FLYOUT) */}
             <aside className="w-full lg:w-64 flex-shrink-0 hidden lg:block relative z-20">
-                {/* ATTACHED REF HERE: This <div> is what we watch. 
-                   Clicks outside this specific box will close the menu.
-                */}
                 <div ref={sidebarRef} className="bg-white rounded-lg shadow-sm border border-gray-200">
                     <div className="p-4 border-b bg-gray-50">
                         <Link href={pathname || '#'} className="text-sm font-bold text-red-500 hover:text-red-700 flex items-center">
@@ -303,7 +312,7 @@ function ProductPageContent() {
                         </Link>
                     </div>
 
-                    {/* MODALITY FIRST */}
+                    {/* DYNAMIC LIST (USES SIDEBAR_MODALITIES) */}
                     {SIDEBAR_MODALITIES.map((mod) => {
                         const isOpen = expandedCategory === mod;
                         const isActive = isModalityActive(mod);
