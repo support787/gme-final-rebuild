@@ -68,7 +68,8 @@ export default function Home() {
   
       <section className="bg-slate-50 py-20">
         <div className="container mx-auto px-6">
-          <h3 className="text-center text-3xl font-bold text-gray-800 mb-12">Browse All Modalities</h3>
+          
+          <h2 className="text-3xl font-bold text-center mb-12 text-teal-500">Browse Our Systems</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8">
             {modalities.map(modality => (
               <ModalityCard key={modality.name} name={modality.name} imageUrl={modality.imageUrl} />
