@@ -13,14 +13,14 @@ const ITEMS_PER_PAGE = 20;
 // ==========================================
 // 1. PARTS LISTS (MUST BE DEFINED HERE)
 // ==========================================
-const SIDEBAR_MODALITIES = [
+const PARTS_MODALITIES = [
   "CT", "MRI", "CATH", "C-ARM", "X-RAY", "MAMMO", "PET/CT", "TUBE", "NUCLEAR", 
   "ULTRASOUND", "CR/PRINTER", "INJECTOR", "MONITOR", "UPS", 
   "POWER SUPPLY", "WORKSTATION",  "NETWORK"
 ];
 
 // MANUFACTURER SECOND (Sub Menu)
-const SIDEBAR_BRANDS = [
+const PARTS_BRANDS = [
   "GE", "SIEMENS", "PHILIPS", "TOSHIBA", "HITACHI", "HOLOGIC", "LORAD", "SHIMADZU", 
   "AGFA", "KODAK", "KONICA", "MEDRAD", "NEC", "EIZO", "CISCO", "COSEL", "DELL", 
   "ESAOTE", "FUJI", "LIEBEL-FLARSHEIM", "MALLINCKRODT", "NEMOTO"
