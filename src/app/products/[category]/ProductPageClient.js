@@ -11,7 +11,7 @@ import { useAuth } from '../../../lib/AuthContext';
 const ITEMS_PER_PAGE = 20;
 
 // ==========================================
-// 1. PARTS LISTS (MUST BE DEFINED HERE)
+// 1. PARTS LISTS
 // ==========================================
 const PARTS_MODALITIES = [
   "CT", "MRI", "CATH", "C-ARM", "X-RAY", "MAMMO", "PET/CT", "TUBE", "NUCLEAR", 
@@ -19,7 +19,6 @@ const PARTS_MODALITIES = [
   "POWER SUPPLY", "WORKSTATION",  "NETWORK"
 ];
 
-// MANUFACTURER SECOND (Sub Menu)
 const PARTS_BRANDS = [
   "GE", "SIEMENS", "PHILIPS", "TOSHIBA", "HITACHI", "HOLOGIC", "LORAD", "SHIMADZU", 
   "AGFA", "KODAK", "KONICA", "MEDRAD", "NEC", "EIZO", "CISCO", "COSEL", "DELL", 
@@ -45,11 +44,9 @@ function ProductPageContent() {
   const pathname = usePathname(); 
   const category = params.category;
   
-  // Detect if we are on the Systems page
   const isSystemsPage = category === 'Systems';
 
   // --- DYNAMICALLY CHOOSE WHICH LIST TO USE ---
-  // This logic fails if the lists above are missing!
   const SIDEBAR_MODALITIES = isSystemsPage ? SYSTEMS_MODALITIES : PARTS_MODALITIES;
   const SIDEBAR_BRANDS = isSystemsPage ? SYSTEMS_BRANDS : PARTS_BRANDS;
 
@@ -65,8 +62,14 @@ function ProductPageContent() {
 
   const [inputValue, setInputValue] = useState(searchParams.get('search') || '');
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
+  
+  // Filters
   const [modalityFilter, setModalityFilter] = useState(searchParams.get('modality') || '');
   const [brandFilter, setBrandFilter] = useState(searchParams.get('brand') || '');
+  
+  // NEW: Location Input State (For Admins)
+  const [locationInput, setLocationInput] = useState(searchParams.get('location') || '');
+  const [locationFilter, setLocationFilter] = useState(searchParams.get('location') || '');
   
   const lastLoggedSearch = useRef(null);
 
@@ -89,7 +92,11 @@ function ProductPageContent() {
     setModalityFilter(searchParams.get('modality') || '');
     setBrandFilter(searchParams.get('brand') || '');
     setSearchTerm(searchParams.get('search') || '');
+    
+    // Sync Search Inputs
     setInputValue(searchParams.get('search') || '');
+    setLocationInput(searchParams.get('location') || '');
+    setLocationFilter(searchParams.get('location') || '');
   }, [searchParams]);
 
   // Fetch Data
@@ -129,11 +136,12 @@ function ProductPageContent() {
     }
   }, [category]);
 
-  // Filters
+  // Filter Logic
   const filteredProducts = useMemo(() => {
     let currentProducts = allProducts;
     const cleanString = (str) => String(str || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
+    // 1. Keyword Search
     if (searchTerm.trim()) {
         const cleanFilter = cleanString(searchTerm);
         currentProducts = currentProducts.filter(p => {
@@ -142,20 +150,30 @@ function ProductPageContent() {
             return descriptionMatch || partNumberMatch;
         });
     }
+    // 2. Modality Filter
     if (modalityFilter.trim()) {
         const cleanFilter = cleanString(modalityFilter);
         currentProducts = currentProducts.filter(p => 
             cleanString(p.modality).includes(cleanFilter)
         );
     }
+    // 3. Brand Filter
     if (brandFilter.trim()) {
         const cleanFilter = cleanString(brandFilter);
         currentProducts = currentProducts.filter(p => 
             cleanString(p.brand).includes(cleanFilter)
         );
     }
+    // 4. Location Filter (Admin)
+    if (locationFilter.trim()) {
+        const cleanFilter = cleanString(locationFilter);
+        currentProducts = currentProducts.filter(p => 
+            cleanString(p.location).includes(cleanFilter)
+        );
+    }
+
     return currentProducts;
-  }, [allProducts, searchTerm, modalityFilter, brandFilter]);
+  }, [allProducts, searchTerm, modalityFilter, brandFilter, locationFilter]);
 
   // CSV Export
   const handleExportCSV = () => {
@@ -185,6 +203,7 @@ function ProductPageContent() {
 
       let filename = isSystemsPage ? 'grand_systems.csv' : 'grand_parts.csv';
       if (searchTerm) filename = `grand_search_${searchTerm}.csv`;
+      else if (locationFilter) filename = `grand_location_${locationFilter}.csv`;
 
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
@@ -220,7 +239,7 @@ function ProductPageContent() {
     }
   }, [searchTerm, isLoading, filteredProducts, category]);
 
-  // Pagination Helper
+  // Navigation Helpers
   const createPageURL = (pageNumber) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set('page', pageNumber.toString());
@@ -232,6 +251,15 @@ function ProductPageContent() {
     currentParams.set('page', '1'); 
     if (inputValue) currentParams.set('search', inputValue);
     else currentParams.delete('search');
+    router.replace(`${pathname}?${currentParams.toString()}`);
+  };
+
+  // NEW: Handler for Location Commit
+  const handleLocationCommit = () => {
+    const currentParams = new URLSearchParams(searchParams.toString());
+    currentParams.set('page', '1'); 
+    if (locationInput) currentParams.set('location', locationInput);
+    else currentParams.delete('location');
     router.replace(`${pathname}?${currentParams.toString()}`);
   };
   
@@ -254,181 +282,4 @@ function ProductPageContent() {
   const isModalityActive = (mod) => modalityFilter.toLowerCase() === mod.toLowerCase();
   
   const paginatedProducts = filteredProducts.slice((pageNumber - 1) * ITEMS_PER_PAGE, pageNumber * ITEMS_PER_PAGE);
-  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
-
-  return (
-    <section className="py-12 bg-slate-50 min-h-screen">
-      <div className="container mx-auto px-4">
-        
-        {/* HEADER */}
-        <div className="flex flex-col md:flex-row justify-between items-center mb-8">
-          <h2 className="text-3xl font-bold text-gray-800 mb-4 md:mb-0">{category} Inventory</h2>
-          <div className="flex space-x-4">
-            {isAdmin && (
-              <button onClick={handleExportCSV} className="bg-green-600 text-white font-bold py-2 px-4 rounded-full hover:bg-green-700 transition flex items-center shadow-sm">
-                <span className="mr-2" role="img" aria-label="download">⬇</span> Export CSV
-              </button>
-            )}
-            {isAdmin && (
-              <Link href={`/add/${isSystemsPage ? 'System' : 'Part'}`} className="bg-teal-600 text-white font-bold py-2 px-4 rounded-full hover:bg-teal-700 transition shadow-sm">
-                + Add New {isSystemsPage ? 'System' : 'Part'}
-              </Link>
-            )}
-          </div>
-        </div>
-        
-        {/* SEARCH */}
-        <div className="bg-white p-6 rounded-lg shadow-sm mb-8">
-             <div className="relative">
-                <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">Search by Part Number, Model or Keyword</label>
-                <div className="flex gap-2">
-                    <input 
-                      type="text" 
-                      id="search" 
-                      placeholder={isSystemsPage ? "e.g. Optima 660..." : "e.g., 45356713149..."}
-                      className="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500" 
-                      value={inputValue} 
-                      onChange={(e) => setInputValue(e.target.value)}
-                      onBlur={handleSearchCommit}
-                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSearchCommit(); } }}
-                    />
-                    <button onClick={handleSearchCommit} className="bg-teal-600 text-white px-6 py-2 rounded-md hover:bg-teal-700 transition">
-                        Search
-                    </button>
-                </div>
-             </div>
-        </div>
-
-        {/* LAYOUT */}
-        <div className="flex flex-col lg:flex-row gap-8 items-start">
-            
-            {/* SIDEBAR (FLYOUT) */}
-            <aside className="w-full lg:w-64 flex-shrink-0 hidden lg:block relative z-20">
-                <div ref={sidebarRef} className="bg-white rounded-lg shadow-sm border border-gray-200">
-                    <div className="p-4 border-b bg-gray-50">
-                        <Link href={pathname || '#'} className="text-sm font-bold text-red-500 hover:text-red-700 flex items-center">
-                           <span>✕ Clear All Filters</span>
-                        </Link>
-                    </div>
-
-                    {/* DYNAMIC LIST (USES SIDEBAR_MODALITIES) */}
-                    {SIDEBAR_MODALITIES.map((mod) => {
-                        const isOpen = expandedCategory === mod;
-                        const isActive = isModalityActive(mod);
-
-                        return (
-                            <div key={mod} className="relative group"> 
-                                <Link 
-                                    href={`${pathname}?modality=${encodeURIComponent(mod)}`}
-                                    onClick={() => toggleCategory(mod)}
-                                    className={`flex w-full justify-between items-center px-4 py-3 text-sm font-medium border-b border-gray-100 last:border-0 transition-colors
-                                        ${isActive 
-                                            ? 'bg-teal-50 text-teal-700 border-l-4 border-teal-600'
-                                            : 'text-gray-600 hover:text-teal-600 hover:bg-gray-50'
-                                        }`}
-                                >
-                                    <span>{mod}</span>
-                                    <span className="ml-2 text-gray-400">›</span>
-                                </Link>
-
-                                {isOpen && (
-                                    <div className="absolute left-full top-0 ml-1 w-56 bg-white border border-gray-200 shadow-xl rounded-r-lg rounded-b-lg overflow-y-auto max-h-[80vh] z-50 animate-fadeIn">
-                                        <div className="bg-gray-50 px-4 py-2 border-b text-xs font-bold text-gray-500 uppercase">
-                                            Manufacturers for {mod}
-                                        </div>
-                                        <Link 
-                                            href={`${pathname}?modality=${encodeURIComponent(mod)}`}
-                                            onClick={selectSubItem} 
-                                            className={`block px-4 py-2 text-sm hover:bg-teal-50 hover:text-teal-700 border-b border-gray-50 ${!brandFilter ? 'font-bold text-teal-600' : 'text-gray-600'}`}
-                                        >
-                                            View All {mod}
-                                        </Link>
-                                        
-                                        {SIDEBAR_BRANDS.map((brand) => (
-                                            <Link
-                                                key={brand}
-                                                href={`${pathname}?modality=${encodeURIComponent(mod)}&brand=${encodeURIComponent(brand)}`}
-                                                onClick={selectSubItem}
-                                                className={`block px-4 py-2 text-sm transition-colors
-                                                    ${isBrandActive(brand) 
-                                                        ? 'font-bold text-teal-600 bg-teal-50' 
-                                                        : 'text-gray-600 hover:bg-gray-50 hover:text-teal-600'
-                                                    }`}
-                                            >
-                                                {brand}
-                                            </Link>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        );
-                    })}
-                </div>
-            </aside>
-
-            {/* CONTENT */}
-            <div className="flex-1 w-full z-10">
-                <div className="lg:hidden grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                    <select className="p-2 border rounded-md" value={modalityFilter} onChange={(e) => handleFilterChange('modality', e.target.value)}>
-                        <option value="">All Modalities</option>
-                        {SIDEBAR_MODALITIES.map(m => <option key={m} value={m}>{m}</option>)}
-                    </select>
-                    <select className="p-2 border rounded-md" value={brandFilter} onChange={(e) => handleFilterChange('brand', e.target.value)}>
-                        <option value="">All Manufacturers</option>
-                        {SIDEBAR_BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
-                    </select>
-                </div>
-
-                {isLoading ? (
-                    <div className="text-center py-20 bg-white rounded-lg shadow-sm">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
-                        <p className="text-gray-500">Loading Inventory...</p>
-                    </div>
-                ) : (
-                    <>
-                        <div className="mb-4 text-sm text-gray-600 flex justify-between items-center">
-                            <span>Showing {paginatedProducts.length} of {filteredProducts.length} results</span>
-                            {(searchTerm || brandFilter || modalityFilter) && (
-                                <button onClick={() => router.push(pathname || '')} className="text-red-500 hover:text-red-700 text-sm font-medium">Clear All Filters</button>
-                            )}
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                            {paginatedProducts.map((product) => (
-                                <ProductCard key={product.id} product={product} />
-                            ))}
-                        </div>
-                        
-                        {totalPages > 1 && (
-                            <div className="mt-12 flex justify-center items-center space-x-4">
-                                <Link href={createPageURL(Math.max(1, pageNumber - 1))} className={`px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 ${pageNumber === 1 ? 'opacity-50 pointer-events-none' : ''}`}>
-                                    ← Previous
-                                </Link>
-                                <span className="text-sm text-gray-700">Page {pageNumber} of {totalPages}</span>
-                                <Link href={createPageURL(Math.min(totalPages, pageNumber + 1))} className={`px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 ${pageNumber === totalPages ? 'opacity-50 pointer-events-none' : ''}`}>
-                                    Next →
-                                </Link>
-                            </div>
-                        )}
-                        {!isLoading && filteredProducts.length === 0 && (
-                            <div className="text-center py-20 bg-white rounded-lg shadow-sm">
-                                <p className="text-xl text-gray-400 mb-2">No products found</p>
-                                <p className="text-gray-500">Try adjusting your filters.</p>
-                            </div>
-                        )}
-                    </>
-                )}
-            </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-export default function ProductPageClient() {
-  return (
-    <Suspense fallback={<div className="text-center py-20">Loading...</div>}>
-      <ProductPageContent />
-    </Suspense>
-  );
-}
+  const totalPages = Math.ceil(filteredProducts.length / ITEMS_
