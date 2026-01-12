@@ -11,9 +11,8 @@ import { useAuth } from '../../../lib/AuthContext';
 const ITEMS_PER_PAGE = 20;
 
 // ==========================================
-// 1. PARTS LISTS (Your existing data)
+// 1. PARTS LISTS (MUST BE DEFINED HERE)
 // ==========================================
-// MODALITY FIRST (Main Menu)
 const SIDEBAR_MODALITIES = [
   "CT", "MRI", "CATH", "C-ARM", "X-RAY", "MAMMO", "PET/CT", "TUBE", "NUCLEAR", 
   "ULTRASOUND", "CR/PRINTER", "INJECTOR", "MONITOR", "UPS", 
@@ -28,7 +27,7 @@ const SIDEBAR_BRANDS = [
 ];
 
 // ==========================================
-// 2. SYSTEMS LISTS (Edit these for Systems!)
+// 2. SYSTEMS LISTS
 // ==========================================
 const SYSTEMS_MODALITIES = [
   "CT", "MRI", "CATH/ANGIO", "PET/CT", "MAMMO", "SPECT/CT", "C-ARM", "DR", "R/F", "ULTRASOUND"
@@ -37,7 +36,6 @@ const SYSTEMS_MODALITIES = [
 const SYSTEMS_BRANDS = [
   "GE", "SIEMENS", "PHILIPS", "TOSHIBA", "CANON", "HITACHI", "HOLOGIC"
 ];
-
 
 function ProductPageContent() {
   const { isAdmin } = useAuth();
@@ -51,6 +49,7 @@ function ProductPageContent() {
   const isSystemsPage = category === 'Systems';
 
   // --- DYNAMICALLY CHOOSE WHICH LIST TO USE ---
+  // This logic fails if the lists above are missing!
   const SIDEBAR_MODALITIES = isSystemsPage ? SYSTEMS_MODALITIES : PARTS_MODALITIES;
   const SIDEBAR_BRANDS = isSystemsPage ? SYSTEMS_BRANDS : PARTS_BRANDS;
 
