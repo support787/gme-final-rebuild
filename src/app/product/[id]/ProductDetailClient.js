@@ -197,11 +197,9 @@ export default function ProductDetailClient() {
 
                   <h1 className="text-xl font-bold text-gray-900 mb-6 whitespace-pre-wrap">{product.description}</h1>
                   
-                  {/* --- NEW: PUBLIC PRICE DISPLAY --- */}
+                  {/* --- UPDATED PUBLIC PRICE DISPLAY --- */}
                   {product.price && (
-                    <div className="mb-6">
-                        <span className="text-3xl font-bold text-teal-600">{product.price}</span>
-                    </div>
+                    <p className="text-xl text-gray-800 font-bold mb-6">Price: {product.price}</p>
                   )}
 
                   <button 
@@ -231,7 +229,7 @@ export default function ProductDetailClient() {
                           <div>
                               <h3 className="text-xl font-bold text-yellow-800 mb-2">Internal Admin Notes</h3>
                               <div className="text-yellow-700">
-                                  {/* ADMIN DISPLAY FOR PRICE (Also shown publicly now) */}
+                                  {/* ADMIN DISPLAY FOR PRICE */}
                                   <p><strong className="font-semibold">Price:</strong> {product.price || 'N/A'}</p>
                                   
                                   {product.type === 'part' && <p><strong className="font-semibold">Location:</strong> {product.location || 'N/A'}</p>}
