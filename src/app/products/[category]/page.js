@@ -1,3 +1,4 @@
+export const revalidate = 0; // This forces Next.js to NEVER cache this page
 import { Suspense } from 'react';
 import ProductPageContent from './ProductPageClient'; // Import the new client component
 
