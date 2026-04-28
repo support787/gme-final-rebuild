@@ -14,7 +14,7 @@ const ITEMS_PER_PAGE = 20;
 // 1. PARTS LISTS
 // ==========================================
 const PARTS_MODALITIES = [
-  "CT", "MRI", "CATH", "C-ARM", "X-RAY", "MAMMO", "PET/CT", "TUBE", "NUCLEAR", 
+  "CT", "MRI", "CATH", "C-ARM", "X-RAY", "MAMMO", "PET/CT", "TUBE", "SPECT/CT", 
   "ULTRASOUND", "CR/PRINTER", "INJECTOR", "MONITOR", "UPS", 
   "POWER SUPPLY", "WORKSTATION",  "NETWORK"
 ];
