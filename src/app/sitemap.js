@@ -1,38 +1,42 @@
 import { collection, getDocs } from 'firebase/firestore';
-// CORRECTED: The import path now correctly goes up one level from 'app' to 'src', then down into 'lib'.
-import { db } from '../lib/firebase';
+import { db } from '../lib/firebase'; // Adjust this path if your firebase.js is elsewhere
+
+// REPLACE THIS WITH YOUR ACTUAL DOMAIN
+const BASE_URL = 'https://www.grandmedicalequipment.com'; 
 
 export default async function sitemap() {
-  const baseUrl = 'https://www.grandmedicalequipment.com';
-
-  // --- Fetch all dynamic product/system URLs ---
-  const systemsRef = collection(db, 'Systems');
-  const productsRef = collection(db, 'products');
-
-  const [systemsSnapshot, productsSnapshot] = await Promise.all([
-    getDocs(systemsRef),
-    getDocs(productsRef)
-  ]);
-
-  const systemUrls = systemsSnapshot.docs.map(doc => ({
-    url: `${baseUrl}/product/${doc.id}`,
+  // 1. Fetch all Parts
+  const partsSnapshot = await getDocs(collection(db, 'products'));
+  const parts = partsSnapshot.docs.map((doc) => ({
+    url: `${BASE_URL}/product/${doc.id}`,
     lastModified: new Date(),
+    changeFrequency: 'weekly',
+    priority: 0.8,
   }));
 
-  const productUrls = productsSnapshot.docs.map(doc => ({
-    url: `${baseUrl}/product/${doc.id}`,
+  // 2. Fetch all Systems
+  const systemsSnapshot = await getDocs(collection(db, 'Systems'));
+  const systems = systemsSnapshot.docs.map((doc) => ({
+    url: `${BASE_URL}/product/${doc.id}`,
     lastModified: new Date(),
+    changeFrequency: 'weekly',
+    priority: 0.9,
   }));
 
-  // --- Define your static page URLs ---
-  const staticUrls = [
-    { url: baseUrl, lastModified: new Date() },
-    { url: `${baseUrl}/about`, lastModified: new Date() },
-    { url: `${baseUrl}/contact`, lastModified: new Date() },
-    { url: `${baseUrl}/products/Systems`, lastModified: new Date() },
-    { url: `${baseUrl}/products/Parts`, lastModified: new Date() },
-  ];
+  // 3. Define your static pages (Home, About, etc.)
+  const routes = [
+    '',
+    '/products/Parts',
+    '/products/Systems',
+    '/contact',
+    '/about',
+  ].map((route) => ({
+    url: `${BASE_URL}${route}`,
+    lastModified: new Date(),
+    changeFrequency: 'daily',
+    priority: 1.0,
+  }));
 
-  // Combine all URLs
-  return [...staticUrls, ...systemUrls, ...productUrls];
+  // 4. Combine everything
+  return [...routes, ...parts, ...systems];
 }

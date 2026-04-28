@@ -368,18 +368,24 @@ function ProductPageContent() {
 
                         return (
                             <div key={mod} className="relative group"> 
-                                <Link 
-                                    href={`${pathname}?modality=${encodeURIComponent(mod)}`}
-                                    onClick={() => toggleCategory(mod)}
-                                    className={`flex w-full justify-between items-center px-4 py-3 text-sm font-medium border-b border-gray-100 last:border-0 transition-colors
-                                        ${isActive 
-                                            ? 'bg-teal-50 text-teal-700 border-l-4 border-teal-600'
-                                            : 'text-gray-600 hover:text-teal-600 hover:bg-gray-50'
-                                        }`}
-                                >
-                                    <span>{mod}</span>
-                                    <span className="ml-2 text-gray-400">›</span>
-                                </Link>
+
+                                
+    <button 
+        onClick={(e) => {
+            e.preventDefault(); // Stops any accidental navigation
+            toggleCategory(mod);
+        }}
+        className={`flex w-full justify-between items-center px-4 py-3 text-sm font-medium border-b border-gray-100 last:border-0 transition-colors
+            ${isActive 
+                ? 'bg-teal-50 text-teal-700 border-l-4 border-teal-600'
+                : 'text-gray-600 hover:text-teal-600 hover:bg-gray-50'
+            }`}
+    >
+        <span>{mod}</span>
+        {/* I added a little rotation effect to the arrow when the menu is open! */}
+        <span className={`ml-2 text-gray-400 transition-transform ${isOpen ? 'rotate-90' : ''}`}>›</span>
+    </button>
+
 
                                 {isOpen && (
                                     <div className="absolute left-full top-0 ml-1 w-56 bg-white border border-gray-200 shadow-xl rounded-r-lg rounded-b-lg overflow-y-auto max-h-[80vh] z-50 animate-fadeIn">
