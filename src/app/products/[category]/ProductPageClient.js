@@ -354,4 +354,140 @@ function ProductPageContent() {
         </div>
 
         {/* LAYOUT */}
-        <div className="flex flex-col lg:flex
+        <div className="flex flex-col lg:flex-row gap-8 items-start">
+            
+            {/* SIDEBAR (FLYOUT) */}
+            <aside className="w-full lg:w-64 flex-shrink-0 hidden lg:block relative z-20">
+                <div ref={sidebarRef} className="bg-white rounded-lg shadow-sm border border-gray-200">
+                    <div className="p-4 border-b bg-gray-50">
+                        <Link href={pathname || '#'} className="text-sm font-bold text-red-500 hover:text-red-700 flex items-center">
+                           <span>✕ Clear All Filters</span>
+                        </Link>
+                    </div>
+
+                    {SIDEBAR_MODALITIES.map((mod) => {
+                        const isOpen = expandedCategory === mod;
+                        const isActive = isModalityActive(mod);
+
+                        return (
+                            <div key={mod} className="relative group"> 
+
+                                
+                                <button 
+                                    onClick={(e) => {
+                                        e.preventDefault(); // Stops any accidental navigation
+                                        toggleCategory(mod);
+                                    }}
+                                    className={`flex w-full justify-between items-center px-4 py-3 text-sm font-medium border-b border-gray-100 last:border-0 transition-colors
+                                        ${isActive 
+                                            ? 'bg-teal-50 text-teal-700 border-l-4 border-teal-600'
+                                            : 'text-gray-600 hover:text-teal-600 hover:bg-gray-50'
+                                        }`}
+                                >
+                                    <span>{mod}</span>
+                                    {/* I added a little rotation effect to the arrow when the menu is open! */}
+                                    <span className={`ml-2 text-gray-400 transition-transform ${isOpen ? 'rotate-90' : ''}`}>›</span>
+                                </button>
+
+
+                                {isOpen && (
+                                    <div className="absolute left-full top-0 ml-1 w-56 bg-white border border-gray-200 shadow-xl rounded-r-lg rounded-b-lg overflow-y-auto max-h-[80vh] z-50 animate-fadeIn">
+                                        <div className="bg-gray-50 px-4 py-2 border-b text-xs font-bold text-gray-500 uppercase">
+                                            Manufacturers for {mod}
+                                        </div>
+                                        <Link 
+                                            href={`${pathname}?modality=${encodeURIComponent(mod)}`}
+                                            onClick={selectSubItem} 
+                                            className={`block px-4 py-2 text-sm hover:bg-teal-50 hover:text-teal-700 border-b border-gray-50 ${!brandFilter ? 'font-bold text-teal-600' : 'text-gray-600'}`}
+                                        >
+                                            View All {mod}
+                                        </Link>
+                                        
+                                        {SIDEBAR_BRANDS.map((brand) => (
+                                            <Link
+                                                key={brand}
+                                                href={`${pathname}?modality=${encodeURIComponent(mod)}&brand=${encodeURIComponent(brand)}`}
+                                                onClick={selectSubItem}
+                                                className={`block px-4 py-2 text-sm transition-colors
+                                                    ${isBrandActive(brand) 
+                                                        ? 'font-bold text-teal-600 bg-teal-50' 
+                                                        : 'text-gray-600 hover:bg-gray-50 hover:text-teal-600'
+                                                    }`}
+                                            >
+                                                {brand}
+                                            </Link>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+            </aside>
+
+            {/* CONTENT */}
+            <div className="flex-1 w-full z-10">
+                <div className="lg:hidden grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                    <select className="p-2 border rounded-md" value={modalityFilter} onChange={(e) => handleFilterChange('modality', e.target.value)}>
+                        <option value="">All Modalities</option>
+                        {SIDEBAR_MODALITIES.map(m => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                    <select className="p-2 border rounded-md" value={brandFilter} onChange={(e) => handleFilterChange('brand', e.target.value)}>
+                        <option value="">All Manufacturers</option>
+                        {SIDEBAR_BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
+                    </select>
+                </div>
+
+                {isLoading ? (
+                    <div className="text-center py-20 bg-white rounded-lg shadow-sm">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
+                        <p className="text-gray-500">Loading Inventory...</p>
+                    </div>
+                ) : (
+                    <>
+                        <div className="mb-4 text-sm text-gray-600 flex justify-between items-center">
+                            <span>Showing {paginatedProducts.length} of {filteredProducts.length} results</span>
+                            {(searchTerm || brandFilter || modalityFilter || locationFilter) && (
+                                <button onClick={() => router.push(pathname || '')} className="text-red-500 hover:text-red-700 text-sm font-medium">Clear All Filters</button>
+                            )}
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            {paginatedProducts.map((product) => (
+                                <ProductCard key={product.id} product={product} />
+                            ))}
+                        </div>
+                        
+                        {totalPages > 1 && (
+                            <div className="mt-12 flex justify-center items-center space-x-4">
+                                <Link href={createPageURL(Math.max(1, pageNumber - 1))} className={`px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 ${pageNumber === 1 ? 'opacity-50 pointer-events-none' : ''}`}>
+                                    ← Previous
+                                </Link>
+                                <span className="text-sm text-gray-700">Page {pageNumber} of {totalPages}</span>
+                                <Link href={createPageURL(Math.min(totalPages, pageNumber + 1))} className={`px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 ${pageNumber === totalPages ? 'opacity-50 pointer-events-none' : ''}`}>
+                                    Next →
+                                </Link>
+                            </div>
+                        )}
+                        {!isLoading && filteredProducts.length === 0 && (
+                            <div className="text-center py-20 bg-white rounded-lg shadow-sm">
+                                <p className="text-xl text-gray-400 mb-2">No products found</p>
+                                <p className="text-gray-500">Try adjusting your filters.</p>
+                            </div>
+                        )}
+                    </>
+                )}
+            </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export default function ProductPageClient() {
+  return (
+    <Suspense fallback={<div className="text-center py-20">Loading...</div>}>
+      <ProductPageContent />
+    </Suspense>
+  );
+}
