@@ -137,6 +137,7 @@ function ProductPageContent() {
   }, [category]);
 
   // Filter Logic
+ // Filter Logic
   const filteredProducts = useMemo(() => {
     let currentProducts = allProducts;
     const cleanString = (str) => String(str || '').toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -147,7 +148,11 @@ function ProductPageContent() {
         currentProducts = currentProducts.filter(p => {
             const descriptionMatch = cleanString(p.description).includes(cleanFilter);
             const partNumberMatch = cleanString(p.partNumber).includes(cleanFilter);
-            return descriptionMatch || partNumberMatch;
+            
+            // NEW: If user is Admin, also check the hidden comments column!
+            const commentsMatch = isAdmin && cleanString(p.comments).includes(cleanFilter);
+
+            return descriptionMatch || partNumberMatch || commentsMatch;
         });
     }
     // 2. Modality Filter
@@ -173,7 +178,7 @@ function ProductPageContent() {
     }
 
     return currentProducts;
-  }, [allProducts, searchTerm, modalityFilter, brandFilter, locationFilter]);
+  }, [allProducts, searchTerm, modalityFilter, brandFilter, locationFilter, isAdmin]);
 
   // CSV Export
   const handleExportCSV = () => {
