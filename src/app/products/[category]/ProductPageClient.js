@@ -120,7 +120,7 @@ function ProductPageContent() {
                 image: imageUrl && imageUrl.startsWith('http') ? imageUrl : null,
                 price: data.PRICE || '', 
                 location: data.LOCATION || data.Location || data.location || '', 
-                comments: data.COMMENT || data.COMMENTS
+                comments: data.COMMENT || data.COMMENTS || data.Comments || data.comments || data.Comment || data.comment
             }
         });
         setAllProducts(productsData);
